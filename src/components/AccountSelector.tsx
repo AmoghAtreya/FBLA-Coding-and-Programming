@@ -1,0 +1,59 @@
+
+import React, { useState } from 'react';
+import { Check, ChevronDown } from 'lucide-react';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
+
+interface AccountSelectorProps {
+  accounts: string[];
+  defaultSelected: string;
+  onSelect: (account: string) => void;
+}
+
+const AccountSelector: React.FC<AccountSelectorProps> = ({
+  accounts,
+  defaultSelected,
+  onSelect
+}) => {
+  const [selected, setSelected] = useState(defaultSelected);
+
+  const handleSelect = (account: string) => {
+    setSelected(account);
+    onSelect(account);
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className="flex items-center gap-2 px-4 py-2 border rounded-lg bg-white hover:bg-gray-50 transition-colors">
+          <span className="font-medium">{selected}</span>
+          <ChevronDown size={16} />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-56 bg-white shadow-lg border rounded-lg p-1">
+        {accounts.map(account => (
+          <DropdownMenuItem
+            key={account}
+            className={cn(
+              "flex items-center justify-between cursor-pointer rounded-md px-3 py-2 text-sm",
+              selected === account ? "bg-blue-50 text-blue-600" : "hover:bg-gray-50"
+            )}
+            onClick={() => handleSelect(account)}
+          >
+            {account}
+            {selected === account && (
+              <Check size={16} className="text-blue-600" />
+            )}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
+export default AccountSelector;
