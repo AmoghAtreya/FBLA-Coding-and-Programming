@@ -205,6 +205,7 @@ const Landing = () => {
           <div className="hidden md:flex items-center space-x-8">
             <Link to="/" className="text-gray-600 hover:text-finflow-blue transition-colors">Home</Link>
             <Link to="/faq" className="text-gray-600 hover:text-finflow-blue transition-colors">FAQ</Link>
+            <Link to="/landing-new" className="text-gray-600 hover:text-finflow-blue transition-colors">New Landing</Link>
             <a 
               onClick={() => scrollToSection('features')} 
               className="text-gray-600 hover:text-finflow-blue transition-colors cursor-pointer"

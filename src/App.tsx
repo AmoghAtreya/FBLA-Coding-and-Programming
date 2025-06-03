@@ -7,6 +7,7 @@ import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import Index from '@/pages/Index';
 import Auth from '@/pages/Auth';
 import Landing from '@/pages/Landing';
+import LandingNew from '@/landingNew';
 import FAQ from '@/pages/FAQ';
 import Transactions from '@/pages/Transactions';
 import Categories from '@/pages/Categories';
@@ -16,6 +17,7 @@ import NotFound from '@/pages/NotFound';
 import SavingsGoals from '@/pages/SavingsGoals';
 import { Toaster } from '@/components/ui/toaster';
 import ChatBot from '@/components/ChatBot';
+
 import './App.css';
 
 const queryClient = new QueryClient({
@@ -80,6 +82,10 @@ const AppRouter = () => {
     {
       path: '/landing',
       element: <Landing />,
+    },
+    {
+      path: '/landing-new',
+      element: <LandingNew />,
     },
     {
       path: '/auth',

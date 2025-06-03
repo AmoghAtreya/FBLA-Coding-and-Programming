@@ -1,7 +1,6 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
+import { motion, useScroll, useTransform, AnimatePresence, useSpring } from 'framer-motion';
 import { 
   ArrowRight, 
   BarChart2, 
@@ -11,7 +10,13 @@ import {
   Grid, 
   MessageSquare,
   ChevronDown,
-  Check
+  Check,
+  Shield,
+  Smartphone,
+  DollarSign,
+  Users,
+  Star,
+  Zap
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
@@ -38,23 +43,40 @@ const Landing = () => {
   const { scrollYProgress } = useScroll();
   const heroRef = useRef<HTMLDivElement>(null);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
-  // Parallax effect for hero section
-  const y = useTransform(scrollYProgress, [0, 0.5], [0, -150]);
+  // Enhanced parallax effects
+  const y = useTransform(scrollYProgress, [0, 0.5], [0, -200]);
   const opacity = useTransform(scrollYProgress, [0, 0.3], [1, 0.3]);
+  const scale = useTransform(scrollYProgress, [0, 0.3], [1, 0.95]);
+  
+  // Spring animations for smooth interactions
+  const springConfig = { stiffness: 100, damping: 30, mass: 1 };
+  const x = useSpring(0, springConfig);
+  const rotateX = useSpring(0, springConfig);
+  const rotateY = useSpring(0, springConfig);
   
   useEffect(() => {
     const handleScroll = () => {
       const scrollPosition = window.scrollY;
-      if (scrollPosition > 50) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
+      setIsScrolled(scrollPosition > 50);
+    };
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      const { clientX, clientY } = e;
+      const { innerWidth, innerHeight } = window;
+      const x = (clientX / innerWidth - 0.5) * 20;
+      const y = (clientY / innerHeight - 0.5) * 20;
+      setMousePosition({ x, y });
     };
     
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('mousemove', handleMouseMove);
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
   }, []);
 
   const handleGetStarted = () => {
@@ -79,16 +101,6 @@ const Landing = () => {
     { date: 'Apr 2024', income: 3100, expenses: 2600 },
     { date: 'May 2024', income: 3500, expenses: 2900 },
     { date: 'Jun 2024', income: 3300, expenses: 2700 },
-    { date: 'Jul 2024', income: 3600, expenses: 2500 },
-    { date: 'Aug 2024', income: 3400, expenses: 2800 },
-    { date: 'Sep 2024', income: 3700, expenses: 2900 },
-    { date: 'Oct 2024', income: 3500, expenses: 2600 },
-    { date: 'Nov 2024', income: 3800, expenses: 2700 },
-    { date: 'Dec 2024', income: 4000, expenses: 3000 },
-    { date: 'Jan 2025', income: 4100, expenses: 2800 },
-    { date: 'Feb 2025', income: 4200, expenses: 2900 },
-    { date: 'Mar 2025', income: 4300, expenses: 3100 },
-    { date: 'Apr 2025', income: 4400, expenses: 3000 },
   ];
 
   const sampleCategoryData = [
@@ -99,43 +111,42 @@ const Landing = () => {
     { name: 'Other', value: 180, color: '#EC4899', percentage: 6 },
   ];
 
-  const features = [
+  const features3D = [
     {
-      title: 'Track Your Finances',
-      description: 'Monitor your income and expenses with intuitive dashboards and reports. Get detailed insights into your spending patterns and make informed financial decisions.',
+      icon: Shield,
+      title: 'Bank-Level Security',
+      description: 'Your money is protected with industry-leading encryption and security protocols.',
+      color: 'from-blue-400 to-blue-600',
+      delay: 0.1
+    },
+    {
       icon: BarChart2,
-      image: 'photo-1488590528505-98d2b5aba04b'
+      title: 'Smart Analytics',
+      description: 'Get detailed insights into your spending patterns with AI-powered analytics.',
+      color: 'from-purple-400 to-purple-600',
+      delay: 0.2
     },
     {
-      title: 'Budget Planning',
-      description: 'Set income-based budgets and track your spending against them. Create custom categories, set spending limits, and receive notifications when you\'re approaching your budget limits.',
-      icon: TrendingUp,
-      image: 'photo-1526374965328-7f61d4dc18c5'
+      icon: Smartphone,
+      title: 'Mobile First',
+      description: 'Manage your finances on-the-go with our intuitive mobile app.',
+      color: 'from-green-400 to-green-600',
+      delay: 0.3
     },
     {
-      title: 'Expense Categories',
-      description: 'Organize transactions by categories to understand your spending patterns. Visualize where your money goes with detailed breakdowns and identify areas where you can save.',
-      icon: Grid,
-      image: 'photo-1531297484001-80022131f5a1'
-    },
-    {
-      title: 'Secure Banking',
-      description: 'Connect your accounts safely with industry-standard encryption. Your financial data is protected with the latest security measures, ensuring your information stays private and secure.',
-      icon: Lock,
-      image: 'photo-1649972904349-6e44c42644a7'
-    },
-    {
-      title: 'Financial Analytics',
-      description: 'Advanced analytics and reporting tools to help you understand your spending patterns and make better financial decisions. Track your progress and set goals for your future.',
-      icon: CreditCard,
-      image: 'photo-1486312338219-ce68d2c6f44d'
-    },
-    {
-      title: 'AI Assistant',
-      description: 'Get personalized financial advice with our intelligent chatbot. Receive answers to your financial questions, budget suggestions, and money-saving tips instantly.',
-      icon: MessageSquare,
-      image: 'photo-1676315030835-8e1323b42904'
+      icon: Zap,
+      title: 'Instant Transfers',
+      description: 'Send and receive money instantly with zero fees for students.',
+      color: 'from-orange-400 to-orange-600',
+      delay: 0.4
     }
+  ];
+
+  const stats3D = [
+    { number: '50K+', label: 'Active Students', icon: Users },
+    { number: '4.9', label: 'App Store Rating', icon: Star },
+    { number: '$5M+', label: 'Money Saved', icon: DollarSign },
+    { number: '99.9%', label: 'Uptime', icon: Shield }
   ];
 
   const testimonials = [
@@ -180,374 +191,539 @@ const Landing = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-white w-full relative overflow-hidden">
-      {/* Fixed Header with Background Change on Scroll */}
-      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white shadow-md py-3' : 'bg-transparent py-5'}`}>
-        <nav className="max-w-[1920px] mx-auto flex justify-between items-center w-full px-6 md:px-10">
-          <Link to="/" className="flex items-center space-x-2">
-            <div className="bg-finflow-blue text-white h-8 w-8 rounded-md flex items-center justify-center font-bold text-xl">F</div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 w-full relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          className="absolute top-20 left-10 w-20 h-20 bg-blue-200 rounded-full opacity-20"
+          animate={{
+            y: [0, -20, 0],
+            rotate: [0, 180, 360],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        />
+        <motion.div
+          className="absolute top-40 right-20 w-16 h-16 bg-purple-200 rounded-full opacity-20"
+          animate={{
+            y: [0, 20, 0],
+            x: [0, -10, 0],
+          }}
+          transition={{
+            duration: 6,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        />
+        <motion.div
+          className="absolute bottom-20 left-1/4 w-12 h-12 bg-green-200 rounded-full opacity-20"
+          animate={{
+            scale: [1, 1.2, 1],
+            rotate: [0, -180, -360],
+          }}
+          transition={{
+            duration: 10,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        />
+      </div>
+
+      {/* Enhanced Header */}
+      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isScrolled ? 'bg-white/80 backdrop-blur-md shadow-xl py-3' : 'bg-transparent py-6'}`}>
+        <nav className="max-w-7xl mx-auto flex justify-between items-center w-full px-6 md:px-10">
+          <Link to="/" className="flex items-center space-x-3">
+            <motion.div 
+              className="bg-gradient-to-r from-finflow-blue to-blue-700 text-white h-10 w-10 rounded-xl flex items-center justify-center font-bold text-xl shadow-lg"
+              whileHover={{ scale: 1.1, rotate: 5 }}
+              transition={{ type: "spring", stiffness: 400, damping: 10 }}
+            >
+              F
+            </motion.div>
             <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-finflow-blue to-blue-700">FinFlow</h1>
           </Link>
+          
           <div className="hidden md:flex items-center space-x-8">
-            <a onClick={() => scrollToSection('features')} className="text-gray-600 hover:text-finflow-blue transition-colors cursor-pointer">Features</a>
-            <a onClick={() => scrollToSection('about')} className="text-gray-600 hover:text-finflow-blue transition-colors cursor-pointer">About</a>
-            <a onClick={() => scrollToSection('testimonials')} className="text-gray-600 hover:text-finflow-blue transition-colors cursor-pointer">Testimonials</a>
-            <a onClick={() => scrollToSection('faq')} className="text-gray-600 hover:text-finflow-blue transition-colors cursor-pointer">FAQ</a>
-            <Link to="/faq" className="text-gray-600 hover:text-finflow-blue transition-colors">FAQ Page</Link>
+            <motion.a 
+              onClick={() => scrollToSection('features')} 
+              className="text-gray-600 hover:text-finflow-blue transition-colors cursor-pointer font-medium"
+              whileHover={{ scale: 1.05 }}
+            >
+              Features
+            </motion.a>
+            <motion.a 
+              onClick={() => scrollToSection('about')} 
+              className="text-gray-600 hover:text-finflow-blue transition-colors cursor-pointer font-medium"
+              whileHover={{ scale: 1.05 }}
+            >
+              About
+            </motion.a>
+            <Link to="/faq" className="text-gray-600 hover:text-finflow-blue transition-colors font-medium">FAQ</Link>
             {user && (
-              <Link to="/dashboard" className="text-gray-600 hover:text-finflow-blue transition-colors">Dashboard</Link>
+              <Link to="/dashboard" className="text-gray-600 hover:text-finflow-blue transition-colors font-medium">Dashboard</Link>
             )}
           </div>
-          <Button 
-            onClick={() => navigate(user ? '/dashboard' : '/auth')}
-            variant="outline" 
-            className="border-finflow-blue text-finflow-blue hover:bg-finflow-blue hover:text-white transition-colors"
-          >
-            {user ? 'Dashboard' : 'Sign In'}
-          </Button>
+          
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button 
+              onClick={() => navigate(user ? '/dashboard' : '/auth')}
+              className="bg-gradient-to-r from-finflow-blue to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-2 rounded-xl font-medium transition-all shadow-lg hover:shadow-xl"
+            >
+              {user ? 'Dashboard' : 'Get Started'}
+            </Button>
+          </motion.div>
         </nav>
       </header>
 
-      {/* Hero Section with Parallax Effect */}
-      <motion.div 
+      {/* Hero Section with 3D Effects */}
+      <motion.section 
         ref={heroRef}
-        style={{ y, opacity }}
-        className="pt-32 pb-16 md:pt-40 md:pb-24 px-6 md:px-10 bg-gradient-to-b from-blue-50 to-white relative"
+        style={{ y, opacity, scale }}
+        className="pt-32 pb-20 md:pt-40 md:pb-32 px-6 md:px-10 relative min-h-screen flex items-center"
       >
-        <div className="max-w-[1920px] mx-auto">
-          <div className="grid md:grid-cols-2 gap-10 items-center">
+        <div className="max-w-7xl mx-auto w-full">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
             <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
+              initial={{ opacity: 0, x: -50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
             >
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight bg-clip-text text-transparent bg-gradient-to-r from-black via-finflow-blue to-blue-700">
-                CONTROL <br />YOUR FINANCES
-              </h1>
-              <p className="text-gray-600 text-lg mb-8 max-w-xl">
-                Manage your student finances with ease. Track expenses, set income-based budgets, and build healthy financial habits.
-              </p>
-              <div className="flex flex-col md:flex-row gap-4 mb-8">
-                <Button 
-                  onClick={handleGetStarted}
-                  className="bg-finflow-blue hover:bg-blue-700 text-white px-8 py-8 rounded-md font-medium text-lg transition-all transform hover:scale-105 flex items-center w-full md:w-auto justify-center"
-                >
-                  Get Started <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => scrollToSection('faq')}
-                  className="border-gray-300 text-gray-700 px-8 py-8 rounded-md font-medium text-lg hover:border-gray-400 w-full md:w-auto justify-center"
-                >
-                  FAQ
-                </Button>
-              </div>
-
+              <motion.h1 
+                className="text-5xl md:text-7xl lg:text-8xl font-bold mb-8 leading-tight"
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.4 }}
+              >
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-gray-900 via-finflow-blue to-blue-700">
+                  MONEY
+                </span>
+                <br />
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-finflow-blue to-blue-700">
+                  WITHOUT
+                </span>
+                <br />
+                <span className="text-gray-900">BORDERS</span>
+              </motion.h1>
+              
+              <motion.p 
+                className="text-xl text-gray-600 mb-10 max-w-xl leading-relaxed"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.6 }}
+              >
+                The modern way to manage student finances. Track expenses, set budgets, and achieve your financial goals with our AI-powered platform.
+              </motion.p>
+              
               <motion.div 
-                className="hidden md:flex items-center space-x-4"
+                className="flex flex-col md:flex-row gap-4 mb-12"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.8 }}
+              >
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button 
+                    onClick={handleGetStarted}
+                    className="bg-gradient-to-r from-finflow-blue to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-10 py-6 rounded-2xl font-semibold text-lg transition-all shadow-2xl hover:shadow-blue-500/25 group"
+                  >
+                    Get Started
+                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </motion.div>
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => navigate('/faq')}
+                    className="border-2 border-gray-300 text-gray-700 px-10 py-6 rounded-2xl font-semibold text-lg hover:border-finflow-blue hover:text-finflow-blue transition-all"
+                  >
+                    Learn More
+                  </Button>
+                </motion.div>
+              </motion.div>
+
+              {/* Trust Indicators */}
+              <motion.div 
+                className="flex items-center space-x-6"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.8, duration: 0.6 }}
+                transition={{ delay: 1, duration: 0.6 }}
               >
-                <div className="flex -space-x-2">
-                  {[1, 2, 3, 4].map(i => (
-                    <div key={i} className={`w-10 h-10 rounded-full border-2 border-white bg-blue-${i*100} flex items-center justify-center text-white text-xs font-bold`}>
-                      {i === 4 ? '+' : i}
-                    </div>
+                <div className="flex -space-x-3">
+                  {[1, 2, 3, 4, 5].map(i => (
+                    <motion.div 
+                      key={i} 
+                      className="w-12 h-12 rounded-full border-3 border-white bg-gradient-to-r from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-bold shadow-lg"
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: 1 + i * 0.1, duration: 0.4 }}
+                      whileHover={{ scale: 1.1, zIndex: 10 }}
+                    >
+                      {i === 5 ? '1K+' : '★'}
+                    </motion.div>
                   ))}
                 </div>
-                <p className="text-gray-600">Thousands of students trust FinFlow</p>
+                <p className="text-gray-600 font-medium">Trusted by thousands of students</p>
               </motion.div>
             </motion.div>
 
+            {/* 3D Floating Cards */}
             <motion.div 
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.8, delay: 0.3 }}
-              className="hidden md:block bg-white p-6 rounded-xl shadow-lg relative"
+              className="relative"
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
             >
-              <div className="absolute -top-4 -right-4 bg-finflow-blue text-white text-sm px-3 py-1 rounded-full font-medium">
-                Sample Data
-              </div>
-              <h3 className="text-xl font-semibold mb-4 text-gray-800">Spending Overview</h3>
-              <div className="h-[400px]">
-                <TransactionsChart data={sampleData} type="area" />
-              </div>
-
-              {/* Floating cards effect */}
+              {/* Main Chart Card */}
               <motion.div 
-                className="absolute -left-10 top-1/4 bg-white p-3 rounded-lg shadow-md"
+                className="bg-white rounded-3xl shadow-2xl p-8 relative z-10"
+                style={{
+                  transform: `perspective(1000px) rotateX(${mousePosition.y * 0.05}deg) rotateY(${mousePosition.x * 0.05}deg)`,
+                }}
+                whileHover={{ 
+                  scale: 1.02,
+                  boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)"
+                }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              >
+                <div className="h-[300px] mb-4">
+                  <TransactionsChart data={sampleData} type="area" />
+                </div>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="text-gray-600 text-sm">Total Balance</p>
+                    <p className="text-2xl font-bold text-gray-900">$4,235.50</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-green-500 text-sm font-medium">+12.5%</p>
+                    <p className="text-gray-600 text-sm">vs last month</p>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Floating Transaction Cards */}
+              <motion.div 
+                className="absolute -top-6 -left-12 bg-white rounded-2xl shadow-xl p-4 z-20"
                 animate={{
-                  y: [0, -8, 0],
+                  y: [0, -10, 0],
+                  rotate: [0, 2, 0],
                 }}
                 transition={{
+                  duration: 4,
                   repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+                whileHover={{ scale: 1.05 }}
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                    <TrendingUp className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900">+$500</p>
+                    <p className="text-sm text-gray-600">Part-time Job</p>
+                  </div>
+                </div>
+              </motion.div>
+
+              <motion.div 
+                className="absolute -bottom-6 -right-12 bg-white rounded-2xl shadow-xl p-4 z-20"
+                animate={{
+                  y: [0, 10, 0],
+                  rotate: [0, -2, 0],
+                }}
+                transition={{
                   duration: 3,
+                  repeat: Infinity,
                   ease: "easeInOut",
+                  delay: 1
                 }}
+                whileHover={{ scale: 1.05 }}
               >
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                  <p className="text-sm font-medium">+$350 Income</p>
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                    <CreditCard className="h-5 w-5 text-red-600" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900">-$45</p>
+                    <p className="text-sm text-gray-600">Groceries</p>
+                  </div>
                 </div>
               </motion.div>
 
               <motion.div 
-                className="absolute -right-10 bottom-1/4 bg-white p-3 rounded-lg shadow-md"
+                className="absolute top-1/2 -right-20 bg-gradient-to-r from-finflow-blue to-blue-700 rounded-2xl shadow-xl p-4 text-white z-20"
                 animate={{
-                  y: [0, 8, 0],
+                  scale: [1, 1.05, 1],
                 }}
                 transition={{
+                  duration: 2,
                   repeat: Infinity,
-                  duration: 2.5,
                   ease: "easeInOut",
-                  delay: 0.5,
+                  delay: 0.5
                 }}
+                whileHover={{ scale: 1.1 }}
               >
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                  <p className="text-sm font-medium">-$120 Coffee</p>
+                <div className="text-center">
+                  <p className="text-2xl font-bold">87%</p>
+                  <p className="text-sm opacity-90">Budget Left</p>
                 </div>
               </motion.div>
             </motion.div>
           </div>
-
-          <motion.div 
-            className="absolute bottom-10 left-1/2 transform -translate-x-1/2 flex flex-col items-center cursor-pointer"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.2, duration: 0.8 }}
-            onClick={() => scrollToSection('features')}
-          >
-            <p className="text-sm text-gray-500 mb-2">Scroll to explore</p>
-            <motion.div 
-              animate={{ y: [0, 5, 0] }}
-              transition={{ repeat: Infinity, duration: 1.5 }}
-            >
-              <ChevronDown className="h-6 w-6 text-gray-400" />
-            </motion.div>
-          </motion.div>
         </div>
-      </motion.div>
 
-      {/* Key Statistics Section */}
-      <section className="py-16 bg-white">
-        <div className="max-w-[1920px] mx-auto px-6 md:px-10">
+        {/* Scroll Indicator */}
+        <motion.div 
+          className="absolute bottom-10 left-1/2 transform -translate-x-1/2 flex flex-col items-center cursor-pointer"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.5, duration: 0.8 }}
+          onClick={() => scrollToSection('stats')}
+        >
+          <p className="text-sm text-gray-500 mb-3 font-medium">Discover More</p>
           <motion.div 
-            className="grid grid-cols-1 md:grid-cols-3 gap-8"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true, margin: "-100px" }}
+            animate={{ y: [0, 8, 0] }}
+            transition={{ repeat: Infinity, duration: 2 }}
           >
-            <div className="bg-blue-50 rounded-xl p-8 text-center">
-              <motion.h3 
-                className="text-4xl md:text-5xl font-bold text-finflow-blue mb-2"
-                initial={{ opacity: 0, scale: 0.8 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.2, duration: 0.4 }}
-                viewport={{ once: true }}
-              >
-                10k+
-              </motion.h3>
-              <p className="text-gray-600">Active Students</p>
-            </div>
-            <div className="bg-blue-50 rounded-xl p-8 text-center">
-              <motion.h3 
-                className="text-4xl md:text-5xl font-bold text-finflow-blue mb-2"
-                initial={{ opacity: 0, scale: 0.8 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.4, duration: 0.4 }}
-                viewport={{ once: true }}
-              >
-                $2.5M+
-              </motion.h3>
-              <p className="text-gray-600">Student Savings</p>
-            </div>
-            <div className="bg-blue-50 rounded-xl p-8 text-center">
-              <motion.h3 
-                className="text-4xl md:text-5xl font-bold text-finflow-blue mb-2"
-                initial={{ opacity: 0, scale: 0.8 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.6, duration: 0.4 }}
-                viewport={{ once: true }}
-              >
-                4.8
-              </motion.h3>
-              <div className="flex justify-center mb-1">
-                {[1, 2, 3, 4, 5].map((_, i) => (
-                  <svg key={i} className="w-5 h-5 fill-current text-yellow-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                    <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-                  </svg>
-                ))}
-              </div>
-              <p className="text-gray-600">App Store Rating</p>
-            </div>
+            <ChevronDown className="h-6 w-6 text-gray-400" />
           </motion.div>
-        </div>
-      </section>
+        </motion.div>
+      </motion.section>
 
-      {/* Financial Insight Section */}
-      <section className="py-20 bg-gradient-to-b from-white to-blue-50">
-        <div className="max-w-[1920px] mx-auto px-6 md:px-10">
-          <motion.div 
-            className="flex flex-col items-center text-center mb-16"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true, margin: "-100px" }}
-          >
-            <h2 className="text-3xl md:text-5xl font-bold mb-6">Take Charge of Your Money</h2>
-            <p className="text-xl text-gray-600 max-w-2xl">
-              Get insights into your spending habits and take control of your finances with our powerful visualization tools.
-            </p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-2 gap-10 items-center">
-            <motion.div 
-              className="bg-white p-8 rounded-2xl shadow-lg"
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
-              viewport={{ once: true, margin: "-100px" }}
-            >
-              <h3 className="text-2xl font-bold mb-4">Monthly Spending Overview</h3>
-              <div className="h-[350px]">
-                <TransactionsChart data={sampleData.slice(-6)} type="bar" />
-              </div>
-            </motion.div>
-
-            <motion.div 
-              className="bg-white p-8 rounded-2xl shadow-lg"
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
-              viewport={{ once: true, margin: "-100px" }}
-            >
-              <h3 className="text-2xl font-bold mb-4">Spending by Category</h3>
-              <div className="h-[350px]">
-                <CategoryChart data={sampleCategoryData} />
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section id="features" className="py-20 bg-white">
-        <div className="max-w-[1920px] mx-auto px-6 md:px-10">
+      {/* 3D Statistics Section */}
+      <section id="stats" className="py-20 px-6 relative">
+        <div className="max-w-7xl mx-auto">
           <motion.div 
             className="text-center mb-16"
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
             viewport={{ once: true, margin: "-100px" }}
           >
-            <h2 className="text-3xl md:text-5xl font-bold mb-6">Everything You Need</h2>
+            <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-finflow-blue">
+              Trusted by Students Worldwide
+            </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Our comprehensive set of tools helps you manage every aspect of your student finances.
+              Join thousands of students who are taking control of their finances with FinFlow
             </p>
           </motion.div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
+
+          <div className="grid md:grid-cols-4 gap-8">
+            {stats3D.map((stat, index) => (
               <motion.div
                 key={index}
-                className="group bg-white p-6 rounded-xl border border-gray-200 hover:shadow-xl transition-all duration-500 hover:border-blue-200 h-full flex flex-col"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
+                className="group relative"
+                initial={{ opacity: 0, y: 50, rotateX: -15 }}
+                whileInView={{ opacity: 1, y: 0, rotateX: 0 }}
                 transition={{ delay: index * 0.1, duration: 0.6 }}
                 viewport={{ once: true, margin: "-50px" }}
+                whileHover={{ 
+                  y: -10,
+                  rotateX: 5,
+                  rotateY: 5,
+                  scale: 1.05
+                }}
               >
-                <div className="relative h-48 mb-6 rounded-lg overflow-hidden">
-                  <img 
-                    src={`https://images.unsplash.com/${feature.image}?auto=format&fit=crop&w=800&q=80`}
-                    alt={feature.title}
-                    className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                  <div className="absolute bottom-4 left-4 text-white font-bold text-lg">{feature.title}</div>
+                <div className="bg-white rounded-3xl p-8 text-center shadow-xl border border-gray-100 transform-gpu transition-all duration-300 group-hover:shadow-2xl group-hover:border-blue-200">
+                  <motion.div 
+                    className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-r from-finflow-blue to-blue-700 flex items-center justify-center"
+                    whileHover={{ rotate: 360 }}
+                    transition={{ duration: 0.6 }}
+                  >
+                    <stat.icon className="h-8 w-8 text-white" />
+                  </motion.div>
+                  <motion.h3 
+                    className="text-4xl font-bold text-gray-900 mb-2"
+                    initial={{ scale: 0.8 }}
+                    whileInView={{ scale: 1 }}
+                    transition={{ delay: index * 0.1 + 0.3, duration: 0.4 }}
+                    viewport={{ once: true }}
+                  >
+                    {stat.number}
+                  </motion.h3>
+                  <p className="text-gray-600 font-medium">{stat.label}</p>
                 </div>
-                <h3 className="text-xl font-semibold mb-2 flex items-center gap-2">
-                  <feature.icon className="h-5 w-5 text-finflow-blue" />
-                  {feature.title}
-                </h3>
-                <p className="text-gray-600 flex-grow">{feature.description}</p>
-                <motion.div 
-                  className="mt-4 flex items-center text-finflow-blue font-medium cursor-pointer"
-                  whileHover={{ x: 5 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                >
-                  Learn more <ArrowRight className="ml-2 h-4 w-4" />
-                </motion.div>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* About Section */}
-      <section id="about" className="py-20 bg-gradient-to-b from-white to-blue-50">
-        <div className="max-w-[1920px] mx-auto px-6 md:px-10">
+      {/* 3D Features Grid */}
+      <section id="features" className="py-20 px-6 bg-gradient-to-b from-white to-blue-50">
+        <div className="max-w-7xl mx-auto">
           <motion.div 
-            className="grid md:grid-cols-2 gap-16 items-center"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
+            className="text-center mb-16"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
             viewport={{ once: true, margin: "-100px" }}
           >
-            <div className="order-2 md:order-1 relative">
-              <motion.img 
-                src="/assets/students.jpg"
-                alt="Students using FinFlow"
-                className="rounded-2xl shadow-lg object-cover w-full h-[500px]"
-                initial={{ scale: 0.9, opacity: 0 }}
-                whileInView={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.8 }}
-                viewport={{ once: true }}
-              />
-              <motion.div 
-                className="absolute -bottom-10 -right-10 bg-white p-6 rounded-xl shadow-lg"
-                initial={{ x: 50, opacity: 0 }}
-                whileInView={{ x: 0, opacity: 1 }}
-                transition={{ delay: 0.4, duration: 0.6 }}
-                viewport={{ once: true }}
+            <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-finflow-blue">
+              Everything You Need
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Powerful features designed specifically for student financial management
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {features3D.map((feature, index) => (
+              <motion.div
+                key={index}
+                className="group relative"
+                initial={{ opacity: 0, y: 60, rotateX: -20 }}
+                whileInView={{ opacity: 1, y: 0, rotateX: 0 }}
+                transition={{ delay: feature.delay, duration: 0.8 }}
+                viewport={{ once: true, margin: "-50px" }}
+                whileHover={{ 
+                  y: -15,
+                  rotateX: 10,
+                  rotateY: 5,
+                  scale: 1.02
+                }}
               >
-                <div className="flex items-center space-x-2 mb-2">
-                  <div className="h-4 w-4 rounded-full bg-green-500"></div>
-                  <p className="font-medium">Savings Growth</p>
+                <div className="bg-white rounded-3xl p-8 h-full shadow-xl border border-gray-100 transform-gpu transition-all duration-500 group-hover:shadow-2xl group-hover:border-blue-200 relative overflow-hidden">
+                  <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-5 transition-opacity duration-500`} />
+                  
+                  <motion.div 
+                    className={`w-16 h-16 mb-6 rounded-2xl bg-gradient-to-r ${feature.color} flex items-center justify-center shadow-lg`}
+                    whileHover={{ rotate: [0, -10, 10, 0], scale: 1.1 }}
+                    transition={{ duration: 0.4 }}
+                  >
+                    <feature.icon className="h-8 w-8 text-white" />
+                  </motion.div>
+                  
+                  <h3 className="text-xl font-bold text-gray-900 mb-4 group-hover:text-finflow-blue transition-colors">
+                    {feature.title}
+                  </h3>
+                  <p className="text-gray-600 leading-relaxed">
+                    {feature.description}
+                  </p>
+                  
+                  <motion.div 
+                    className="mt-6 flex items-center text-finflow-blue font-semibold opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                    whileHover={{ x: 5 }}
+                  >
+                    Learn more <ArrowRight className="ml-2 h-4 w-4" />
+                  </motion.div>
                 </div>
-                <div className="flex items-center space-x-6">
-                  <div className="text-3xl font-bold text-finflow-blue">+27%</div>
-                  <TrendingUp className="h-6 w-6 text-green-500" />
-                </div>
-                <p className="text-sm text-gray-600 mt-1">Average for active users</p>
               </motion.div>
-            </div>
-            <div className="order-1 md:order-2">
-              <motion.h2 
-                className="text-3xl md:text-4xl font-bold mb-6"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-                viewport={{ once: true }}
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* About Section with 3D Elements */}
+      <section id="about" className="py-20 px-6 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <motion.div 
+              className="relative"
+              initial={{ opacity: 0, x: -50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true, margin: "-100px" }}
+            >
+              <motion.div 
+                className="relative z-10 bg-white rounded-3xl shadow-2xl overflow-hidden"
+                whileHover={{ 
+                  scale: 1.02,
+                  rotateY: 5,
+                  rotateX: 5
+                }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                style={{
+                  transform: `perspective(1000px) rotateX(${mousePosition.y * 0.02}deg) rotateY(${mousePosition.x * 0.02}deg)`,
+                }}
               >
-                Built For Students, <span className="text-finflow-blue">By Students</span>
-              </motion.h2>
-              <motion.p 
-                className="text-lg text-gray-600 mb-8"
+                <img 
+                  src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=800&q=80"
+                  alt="Students using FinFlow"
+                  className="w-full h-[400px] object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                <div className="absolute bottom-6 left-6 text-white">
+                  <h3 className="text-2xl font-bold mb-2">Built for Students</h3>
+                  <p className="text-sm opacity-90">By students, for students</p>
+                </div>
+              </motion.div>
+
+              {/* Floating Achievement Cards */}
+              <motion.div 
+                className="absolute -top-6 -right-6 bg-gradient-to-r from-green-400 to-green-600 rounded-2xl shadow-xl p-4 text-white z-20"
+                animate={{
+                  y: [0, -10, 0],
+                  rotate: [0, 3, 0],
+                }}
+                transition={{
+                  duration: 4,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+              >
+                <div className="text-center">
+                  <p className="text-xl font-bold">+27%</p>
+                  <p className="text-xs opacity-90">Savings Growth</p>
+                </div>
+              </motion.div>
+
+              <motion.div 
+                className="absolute -bottom-6 -left-6 bg-gradient-to-r from-purple-400 to-purple-600 rounded-2xl shadow-xl p-4 text-white z-20"
+                animate={{
+                  y: [0, 10, 0],
+                  rotate: [0, -3, 0],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                  delay: 1
+                }}
+              >
+                <div className="flex items-center space-x-2">
+                  <Shield className="h-5 w-5" />
+                  <div>
+                    <p className="text-sm font-semibold">100%</p>
+                    <p className="text-xs opacity-90">Secure</p>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true, margin: "-100px" }}
+            >
+              <motion.h2 
+                className="text-4xl md:text-5xl font-bold mb-8"
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2, duration: 0.6 }}
                 viewport={{ once: true }}
               >
-                We understand the unique financial challenges students face. That's why we've built a platform that focuses on income-based budgeting, helping you make the most of your limited resources while still enjoying student life.
+                Built For Students, <span className="bg-clip-text text-transparent bg-gradient-to-r from-finflow-blue to-blue-700">By Students</span>
+              </motion.h2>
+              
+              <motion.p 
+                className="text-xl text-gray-600 mb-10 leading-relaxed"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4, duration: 0.6 }}
+                viewport={{ once: true }}
+              >
+                We understand the unique financial challenges students face. That's why we've built a platform that focuses on income-based budgeting and smart financial habits.
               </motion.p>
+              
               <motion.div 
-                className="space-y-4"
+                className="space-y-6"
                 initial={{ opacity: 0 }}
                 whileInView={{ opacity: 1 }}
-                transition={{ delay: 0.4, duration: 0.6 }}
+                transition={{ delay: 0.6, duration: 0.6 }}
                 viewport={{ once: true }}
               >
                 {[
@@ -555,130 +731,206 @@ const Landing = () => {
                   'Visual spending breakdowns',
                   'Financial goal setting',
                   'Secure data protection',
-                  'Student-specific financial guidance'
+                  'Student-specific guidance'
                 ].map((item, index) => (
                   <motion.div
                     key={index} 
-                    className="flex items-start"
+                    className="flex items-center group"
                     initial={{ opacity: 0, x: -20 }}
                     whileInView={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.4 + index * 0.1, duration: 0.5 }}
+                    transition={{ delay: 0.6 + index * 0.1, duration: 0.5 }}
                     viewport={{ once: true }}
+                    whileHover={{ x: 10 }}
                   >
-                    <div className="mr-3 h-6 w-6 rounded-full bg-finflow-blue text-white flex items-center justify-center shrink-0">
+                    <motion.div 
+                      className="mr-4 h-8 w-8 rounded-full bg-gradient-to-r from-finflow-blue to-blue-700 text-white flex items-center justify-center shrink-0 shadow-lg"
+                      whileHover={{ scale: 1.2, rotate: 360 }}
+                      transition={{ duration: 0.3 }}
+                    >
                       <Check className="h-4 w-4" />
-                    </div>
-                    <p className="text-lg">{item}</p>
+                    </motion.div>
+                    <p className="text-lg font-medium text-gray-800 group-hover:text-finflow-blue transition-colors">{item}</p>
                   </motion.div>
                 ))}
               </motion.div>
+              
               <motion.div 
-                className="mt-10"
+                className="mt-12"
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6, duration: 0.6 }}
+                transition={{ delay: 1, duration: 0.6 }}
                 viewport={{ once: true }}
               >
-                <Button 
-                  onClick={handleGetStarted}
-                  className="bg-finflow-blue hover:bg-blue-700 text-white px-8 py-6 rounded-md font-medium text-lg transition-all transform hover:scale-105"
-                >
-                  Get Started Now <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button 
+                    onClick={handleGetStarted}
+                    className="bg-gradient-to-r from-finflow-blue to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-10 py-6 rounded-2xl font-semibold text-lg transition-all shadow-2xl hover:shadow-blue-500/25 group"
+                  >
+                    Start Your Journey
+                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </motion.div>
               </motion.div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </div>
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section id="testimonials" className="py-20 bg-white">
-        <div className="max-w-[1920px] mx-auto px-6 md:px-10">
+      {/* Testimonials with 3D Cards */}
+      <section className="py-20 px-6 bg-gradient-to-b from-blue-50 to-white relative overflow-hidden">
+        <div className="max-w-7xl mx-auto">
           <motion.div 
             className="text-center mb-16"
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
             viewport={{ once: true, margin: "-100px" }}
           >
-            <h2 className="text-3xl md:text-5xl font-bold mb-6">What Students Say</h2>
+            <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-finflow-blue">
+              What Students Say
+            </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Join thousands of students who are using FinFlow to take control of their finances.
+              Join thousands of students who are transforming their financial future
             </p>
           </motion.div>
 
-          <Carousel className="w-full">
-            <CarouselContent>
-              {testimonials.map((testimonial, index) => (
-                <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
-                  <motion.div 
-                    className="bg-blue-50 p-8 rounded-xl h-full flex flex-col"
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1, duration: 0.6 }}
-                    viewport={{ once: true }}
-                  >
-                    <div className="mb-4">
-                      {[1, 2, 3, 4, 5].map((_, i) => (
-                        <svg key={i} className="inline-block w-5 h-5 text-yellow-500 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                          <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-                        </svg>
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              {
+                quote: "FinFlow completely changed how I manage my money. The budgeting tools are perfect for irregular student income.",
+                author: "Alex M.",
+                role: "Graduate Student",
+                rating: 5,
+                image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80"
+              },
+              {
+                quote: "Finally an app that understands student life! The interface is intuitive and the insights are amazing.",
+                author: "Jamie L.",
+                role: "Undergraduate",
+                rating: 5,
+                image: "https://images.unsplash.com/photo-1494790108755-2616b612b740?auto=format&fit=crop&w=150&q=80"
+              },
+              {
+                quote: "I've saved over $300 since using FinFlow. The visual breakdowns really help me see where my money goes.",
+                author: "Taylor K.",
+                role: "PhD Candidate",
+                rating: 5,
+                image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80"
+              }
+            ].map((testimonial, index) => (
+              <motion.div
+                key={index}
+                className="group relative"
+                initial={{ opacity: 0, y: 60, rotateX: -15 }}
+                whileInView={{ opacity: 1, y: 0, rotateX: 0 }}
+                transition={{ delay: index * 0.2, duration: 0.8 }}
+                viewport={{ once: true, margin: "-50px" }}
+                whileHover={{ 
+                  y: -15,
+                  rotateX: 10,
+                  scale: 1.02
+                }}
+              >
+                <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 h-full transform-gpu transition-all duration-500 group-hover:shadow-2xl group-hover:border-blue-200 relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-purple-50 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  
+                  <div className="relative z-10">
+                    <div className="flex mb-4">
+                      {[...Array(testimonial.rating)].map((_, i) => (
+                        <motion.div
+                          key={i}
+                          initial={{ opacity: 0, scale: 0 }}
+                          whileInView={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: index * 0.2 + i * 0.1, duration: 0.3 }}
+                          viewport={{ once: true }}
+                        >
+                          <Star className="w-5 h-5 text-yellow-400 fill-current" />
+                        </motion.div>
                       ))}
                     </div>
-                    <p className="text-lg text-gray-700 flex-grow italic">&ldquo;{testimonial.quote}&rdquo;</p>
-                    <div className="mt-6">
-                      <p className="font-semibold">{testimonial.author}</p>
-                      <p className="text-sm text-gray-600">{testimonial.role}</p>
+                    
+                    <p className="text-gray-700 text-lg leading-relaxed mb-6 italic">
+                      "{testimonial.quote}"
+                    </p>
+                    
+                    <div className="flex items-center">
+                      <motion.img 
+                        src={testimonial.image}
+                        alt={testimonial.author}
+                        className="w-12 h-12 rounded-full mr-4 border-2 border-gray-200"
+                        whileHover={{ scale: 1.1 }}
+                      />
+                      <div>
+                        <p className="font-semibold text-gray-900">{testimonial.author}</p>
+                        <p className="text-sm text-gray-600">{testimonial.role}</p>
+                      </div>
                     </div>
-                  </motion.div>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <div className="hidden md:flex">
-              <CarouselPrevious className="relative -left-4" />
-              <CarouselNext className="relative -right-4" />
-            </div>
-          </Carousel>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* FAQ Section */}
-      <section id="faq" className="py-20 bg-blue-50">
-        <div className="max-w-[1920px] mx-auto px-6 md:px-10">
+      <section id="faq" className="py-20 px-6 bg-white">
+        <div className="max-w-4xl mx-auto">
           <motion.div 
             className="text-center mb-16"
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
             viewport={{ once: true, margin: "-100px" }}
           >
-            <h2 className="text-3xl md:text-5xl font-bold mb-6">Frequently Asked Questions</h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Find answers to common questions about FinFlow.
+            <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-finflow-blue">
+              Common Questions
+            </h2>
+            <p className="text-xl text-gray-600">
+              Everything you need to know about FinFlow
             </p>
           </motion.div>
 
           <motion.div 
-            className="max-w-3xl mx-auto"
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <Accordion type="single" collapsible className="space-y-4">
-              {faqs.map((faq, index) => (
+            <Accordion type="single" collapsible className="space-y-6">
+              {[
+                {
+                  question: "What is FinFlow?",
+                  answer: "FinFlow is a comprehensive financial management platform designed specifically for students. It helps you track expenses, set budgets based on your income, and build healthy financial habits."
+                },
+                {
+                  question: "Is FinFlow free to use?",
+                  answer: "Yes, FinFlow's core features are completely free for students. We offer premium features for advanced users, but you can accomplish most financial management tasks with our free plan."
+                },
+                {
+                  question: "How secure is my financial data?",
+                  answer: "We use bank-level encryption and security measures to protect your data. Your information is never shared with third parties, and you maintain full control over your financial data."
+                },
+                {
+                  question: "Can I connect my bank account?",
+                  answer: "Yes, FinFlow supports secure connections to thousands of financial institutions. We use industry-standard security protocols to ensure your banking information remains safe."
+                }
+              ].map((faq, index) => (
                 <motion.div
                   key={index}
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1, duration: 0.6 }}
                   viewport={{ once: true }}
                 >
-                  <AccordionItem value={`item-${index}`} className="bg-white rounded-lg shadow-sm px-6">
-                    <AccordionTrigger className="text-left text-lg font-medium py-4">
+                  <AccordionItem 
+                    value={`item-${index}`} 
+                    className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-2xl shadow-lg border border-gray-100 px-6 overflow-hidden group hover:shadow-xl transition-all duration-300"
+                  >
+                    <AccordionTrigger className="text-left text-lg font-semibold py-6 group-hover:text-finflow-blue transition-colors">
                       {faq.question}
                     </AccordionTrigger>
-                    <AccordionContent className="text-gray-600 pb-4">
+                    <AccordionContent className="text-gray-600 pb-6 leading-relaxed">
                       {faq.answer}
                     </AccordionContent>
                   </AccordionItem>
@@ -687,106 +939,198 @@ const Landing = () => {
             </Accordion>
 
             <motion.div 
-              className="mt-10 text-center"
+              className="mt-12 text-center"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6, duration: 0.6 }}
               viewport={{ once: true }}
             >
               <Link to="/faq">
-                <Button 
-                  variant="outline" 
-                  className="border-finflow-blue text-finflow-blue hover:bg-finflow-blue hover:text-white transition-colors px-8 py-6"
-                >
-                  View All FAQs <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button 
+                    variant="outline" 
+                    className="border-2 border-finflow-blue text-finflow-blue hover:bg-finflow-blue hover:text-white transition-all px-8 py-6 rounded-2xl font-semibold text-lg"
+                  >
+                    View All FAQs <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </motion.div>
               </Link>
             </motion.div>
           </motion.div>
         </div>
       </section>
 
-      {/* CTA Section */}
+      {/* Enhanced CTA Section */}
       <motion.section 
-        className="px-6 py-20 bg-gradient-to-r from-finflow-blue to-blue-700 text-white w-full relative overflow-hidden"
+        className="px-6 py-32 bg-gradient-to-r from-finflow-blue via-blue-700 to-indigo-800 text-white relative overflow-hidden"
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
         transition={{ duration: 0.8 }}
         viewport={{ once: true }}
       >
-        <motion.div 
-          className="absolute inset-0 opacity-10"
-          animate={{ 
-            backgroundPosition: ['0% 0%', '100% 100%'],
-            scale: [1, 1.1, 1]
-          }}
-          transition={{ 
-            duration: 20,
-            repeat: Infinity,
-            repeatType: "reverse"
-          }}
-          style={{
-            backgroundImage: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.4"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")'
-          }}
-        />
-        <div className="max-w-[1920px] mx-auto text-center relative z-10">
+        {/* Animated Background Elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          <motion.div
+            className="absolute top-10 left-10 w-32 h-32 bg-white/10 rounded-full"
+            animate={{
+              scale: [1, 1.2, 1],
+              rotate: [0, 180, 360],
+            }}
+            transition={{
+              duration: 20,
+              repeat: Infinity,
+              ease: "linear"
+            }}
+          />
+          <motion.div
+            className="absolute bottom-10 right-10 w-24 h-24 bg-white/10 rounded-full"
+            animate={{
+              scale: [1.2, 1, 1.2],
+              rotate: [360, 180, 0],
+            }}
+            transition={{
+              duration: 15,
+              repeat: Infinity,
+              ease: "linear"
+            }}
+          />
+        </div>
+
+        <div className="max-w-4xl mx-auto text-center relative z-10">
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             whileInView={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-4xl md:text-6xl font-bold mb-6">Ready to Take Control?</h2>
-            <p className="text-xl opacity-90 mb-10 max-w-2xl mx-auto">
-              Join thousands of students who are using FinFlow to manage their money better and achieve their financial goals.
-            </p>
-            <Button 
-              onClick={handleGetStarted}
-              size="lg"
-              className="bg-white text-finflow-blue hover:bg-gray-100 px-10 py-8 rounded-md font-medium text-xl transform hover:scale-105 transition-all shadow-lg"
+            <motion.h2 
+              className="text-5xl md:text-7xl font-bold mb-8"
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.8 }}
+              viewport={{ once: true }}
             >
-              Get Started Now <ArrowRight className="ml-2 h-6 w-6" />
-            </Button>
-            <p className="mt-6 text-sm opacity-80">No credit card required. Free for students.</p>
+              Ready to Take Control?
+            </motion.h2>
+            <motion.p 
+              className="text-xl md:text-2xl opacity-90 mb-12 max-w-2xl mx-auto leading-relaxed"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.8 }}
+              viewport={{ once: true }}
+            >
+              Join thousands of students who are transforming their financial future with FinFlow
+            </motion.p>
+            
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6, duration: 0.8 }}
+              viewport={{ once: true }}
+            >
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button 
+                  onClick={handleGetStarted}
+                  size="lg"
+                  className="bg-white text-finflow-blue hover:bg-gray-100 px-12 py-8 rounded-2xl font-bold text-xl transform transition-all shadow-2xl hover:shadow-white/25 group"
+                >
+                  Get Started Now
+                  <ArrowRight className="ml-3 h-6 w-6 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </motion.div>
+            </motion.div>
+            
+            <motion.p 
+              className="mt-8 text-sm opacity-80"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ delay: 0.8, duration: 0.8 }}
+              viewport={{ once: true }}
+            >
+              No credit card required • Free for students • Start in 2 minutes
+            </motion.p>
           </motion.div>
         </div>
       </motion.section>
 
-      <footer className="px-6 py-10 bg-gray-900 text-gray-300 w-full">
-        <div className="max-w-[1920px] mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-center mb-8">
-            <div className="flex items-center space-x-2 mb-6 md:mb-0">
-              <div className="bg-finflow-blue text-white h-8 w-8 rounded-md flex items-center justify-center font-bold text-xl">F</div>
-              <h1 className="text-2xl font-bold text-white">FinFlow</h1>
+      {/* Enhanced Footer */}
+      <footer className="px-6 py-16 bg-gray-900 text-gray-300 relative">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid md:grid-cols-4 gap-8 mb-12">
+            <div className="col-span-2">
+              <motion.div 
+                className="flex items-center space-x-3 mb-6"
+                whileHover={{ scale: 1.05 }}
+              >
+                <div className="bg-gradient-to-r from-finflow-blue to-blue-700 text-white h-10 w-10 rounded-xl flex items-center justify-center font-bold text-xl shadow-lg">F</div>
+                <h1 className="text-2xl font-bold text-white">FinFlow</h1>
+              </motion.div>
+              <p className="text-gray-400 leading-relaxed max-w-md">
+                Empowering students to take control of their financial future with intelligent budgeting tools and insights.
+              </p>
+              <div className="flex space-x-4 mt-6">
+                {['facebook', 'twitter', 'instagram'].map((social) => (
+                  <motion.a 
+                    key={social}
+                    href="#" 
+                    className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-finflow-blue transition-all"
+                    whileHover={{ scale: 1.1, rotate: 5 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <span className="text-sm font-bold">{social[0].toUpperCase()}</span>
+                  </motion.a>
+                ))}
+              </div>
             </div>
-            <div className="flex flex-wrap gap-x-8 gap-y-4 justify-center md:justify-end">
-              <a onClick={() => scrollToSection('features')} className="cursor-pointer hover:text-white transition-colors">Features</a>
-              <a onClick={() => scrollToSection('about')} className="cursor-pointer hover:text-white transition-colors">About</a>
-              <a onClick={() => scrollToSection('testimonials')} className="cursor-pointer hover:text-white transition-colors">Testimonials</a>
-              <a onClick={() => scrollToSection('faq')} className="cursor-pointer hover:text-white transition-colors">FAQ</a>
-              <Link to="/faq" className="hover:text-white transition-colors">FAQ Page</Link>
-              <a href="#" className="hover:text-white transition-colors">Privacy</a>
-              <a href="#" className="hover:text-white transition-colors">Terms</a>
+            
+            <div>
+              <h3 className="text-white font-semibold mb-4">Product</h3>
+              <div className="space-y-3">
+                {['Features', 'Pricing', 'Security', 'Mobile App'].map((item) => (
+                  <motion.a 
+                    key={item}
+                    href="#" 
+                    className="block text-gray-400 hover:text-white transition-colors"
+                    whileHover={{ x: 5 }}
+                  >
+                    {item}
+                  </motion.a>
+                ))}
+              </div>
+            </div>
+            
+            <div>
+              <h3 className="text-white font-semibold mb-4">Support</h3>
+              <div className="space-y-3">
+                {['Help Center', 'Contact Us', 'FAQ', 'Community'].map((item) => (
+                  <motion.a 
+                    key={item}
+                    href="#" 
+                    className="block text-gray-400 hover:text-white transition-colors"
+                    whileHover={{ x: 5 }}
+                  >
+                    {item}
+                  </motion.a>
+                ))}
+              </div>
             </div>
           </div>
-          <div className="border-t border-gray-800 pt-8 mt-8 flex flex-col md:flex-row justify-between items-center">
-            <p className="text-sm mb-4 md:mb-0">&copy; {new Date().getFullYear()} FinFlow. All rights reserved.</p>
-            <div className="flex space-x-6">
-              <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path fillRule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clipRule="evenodd"></path>
-                </svg>
-              </a>
-              <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path fillRule="evenodd" d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 011.772 1.153 4.902 4.902 0 011.153 1.772c.247.636.416 1.363.465 2.427.048 1.067.06 1.407.06 4.123v.08c0 2.643-.012 2.987-.06 4.043-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772 4.902 4.902 0 01-1.772 1.153c-.636.247-1.363.416-2.427.465-1.067.048-1.407.06-4.123.06h-.08c-2.643 0-2.987-.012-4.043-.06-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.047-1.024-.06-1.379-.06-3.808v-.63c0-2.43.013-2.784.06-3.808.049-1.064.218-1.791.465-2.427a4.902 4.902 0 011.153-1.772A4.902 4.902 0 015.45 2.525c.636-.247 1.363-.416 2.427-.465C8.901 2.013 9.256 2 11.685 2h.63zm-.081 1.802h-.468c-2.456 0-2.784.011-3.807.058-.975.045-1.504.207-1.857.344-.467.182-.8.398-1.15.748-.35.35-.566.683-.748 1.15-.137.353-.3.882-.344 1.857-.047 1.023-.058 1.351-.058 3.807v.468c0 2.456.011 2.784.058 3.807.045.975.207 1.504.344 1.857.182.466.399.8.748 1.15.35.35.683.566 1.15.748.353.137.882.3 1.857.344 1.054.048 1.37.058 4.041.058h.08c2.597 0 2.917-.01 3.96-.058.976-.045 1.505-.207 1.858-.344.466-.182.8-.398 1.15-.748.35-.35.566-.683.748-1.15.137-.353.3-.882.344-1.857.048-1.055.058-1.37.058-4.041v-.08c0-2.597-.01-2.917-.058-3.96-.045-.976-.207-1.505-.344-1.858a3.097 3.097 0 00-.748-1.15 3.098 3.098 0 00-1.15-.748c-.353-.137-.882-.3-1.857-.344-1.023-.047-1.351-.058-3.807-.058zM12 6.865a5.135 5.135 0 110 10.27 5.135 5.135 0 010-10.27zm0 1.802a3.333 3.333 0 100 6.666 3.333 3.333 0 000-6.666zm5.338-3.205a1.2 1.2 0 110 2.4 1.2 1.2 0 010-2.4z" clipRule="evenodd"></path>
-                </svg>
-              </a>
-              <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84"></path>
-                </svg>
-              </a>
+          
+          <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center">
+            <p className="text-sm text-gray-400 mb-4 md:mb-0">
+              &copy; {new Date().getFullYear()} FinFlow. All rights reserved.
+            </p>
+            <div className="flex flex-wrap gap-6">
+              {['Privacy Policy', 'Terms of Service', 'Cookie Policy'].map((item) => (
+                <motion.a 
+                  key={item}
+                  href="#" 
+                  className="text-sm text-gray-400 hover:text-white transition-colors"
+                  whileHover={{ scale: 1.05 }}
+                >
+                  {item}
+                </motion.a>
+              ))}
             </div>
           </div>
         </div>
