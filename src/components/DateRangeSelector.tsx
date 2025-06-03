@@ -133,7 +133,7 @@ const DateRangeSelector: React.FC<DateRangeSelectorProps> = ({
 
       <Button 
         variant="outline" 
-        className="h-10 text-sm" 
+        className="h-10 text-sm bg-gray-800 text-white hover:bg-gray-700" 
         onClick={() => setIsCalendarOpen(true)}
       >
         Custom Range

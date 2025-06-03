@@ -10,11 +10,35 @@ export const getTransactions = async (): Promise<Transaction[]> => {
       throw new Error("User not authenticated");
     }
 
-    const { data, error } = await supabase
+    // Try with 'date' column first, fallback to 'transaction_date' if needed
+    let { data, error } = await supabase
       .from('transactions')
       .select('*')
       .eq('user_id', session.user.id)
-      .order('transaction_date', { ascending: false });
+      .order('date', { ascending: false });
+
+    // If 'date' column doesn't exist, try 'transaction_date'
+    if (error && error.code === '42703') {
+      const { data: retryData, error: retryError } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('transaction_date', { ascending: false });
+      
+      data = retryData;
+      error = retryError;
+    }
+
+    // If both fail, try without ordering
+    if (error && error.code === '42703') {
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('user_id', session.user.id);
+      
+      data = fallbackData;
+      error = fallbackError;
+    }
 
     if (error) {
       console.error("Error fetching transactions:", error);
@@ -22,17 +46,22 @@ export const getTransactions = async (): Promise<Transaction[]> => {
     }
 
     // Ensure the type field is correctly cast to "income" | "expense"
-    const typedData = data?.map(item => ({
-      ...item,
-      // Ensure type is either "income" or "expense"
-      type: (item.type === "income" || item.type === "expense") 
-        ? (item.type as "income" | "expense") 
-        : (item.amount >= 0 ? "income" as const : "expense" as const),
-      date: item.transaction_date, // Add date alias
-      channel: item.account_name // Add channel alias
-    })) || [];
+    const typedData = data?.map(item => {
+      const itemAny = item as any; // Type assertion to access flexible properties
+      return {
+        ...item,
+        // Ensure type is either "income" or "expense"
+        type: (item.type === "income" || item.type === "expense") 
+          ? (item.type as "income" | "expense") 
+          : (item.amount >= 0 ? "income" as const : "expense" as const),
+        date: itemAny.date || item.transaction_date || item.created_at, // Flexible date handling
+        channel: itemAny.channel || item.account_name, // Flexible channel handling
+        transaction_date: itemAny.date || item.transaction_date || item.created_at // Ensure transaction_date exists
+      };
+    }) || [];
 
-    return typedData;
+    // Sort by date if we couldn't order in the query
+    return typedData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   } catch (error) {
     console.error("Error fetching transactions:", error);
     throw error;

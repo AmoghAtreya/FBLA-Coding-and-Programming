@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Globe, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 
 
 const LandingNew = () => {
@@ -102,27 +103,30 @@ const LandingNew = () => {
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-8">
-              {['Our Products', 'Carrier', 'Help Center', 'About'].map((item, index) => (
-                <motion.a
-                  key={item}
-                  href="#"
-                  className="text-gray-300 hover:text-white transition-colors duration-200 text-sm"
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 + 0.3 }}
-                >
-                  {item}
-                </motion.a>
-              ))}
-              <motion.a
-                href="/landing"
+              <Link
+                to="/dashboard"
                 className="text-gray-300 hover:text-white transition-colors duration-200 text-sm"
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
+              >
+                Dashboard
+              </Link>
+              <Link
+                to="/faq"
+                className="text-gray-300 hover:text-white transition-colors duration-200 text-sm"
+              >
+                Help Center
+              </Link>
+              <Link
+                to="/settings"
+                className="text-gray-300 hover:text-white transition-colors duration-200 text-sm"
+              >
+                Settings
+              </Link>
+              <Link
+                to="/landing"
+                className="text-gray-300 hover:text-white transition-colors duration-200 text-sm"
               >
                 Original Landing
-              </motion.a>
+              </Link>
             </div>
 
             {/* Right Side */}
@@ -144,7 +148,7 @@ const LandingNew = () => {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.7 }}
               >
-                log in
+                <Link to="/auth" className="text-gray-300 hover:text-white">log in</Link>
               </motion.button>
               
               <motion.button 
@@ -153,7 +157,7 @@ const LandingNew = () => {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.8 }}
               >
-                Register
+                <Link to="/auth" className="text-white">Register</Link>
               </motion.button>
             </div>
 
@@ -180,17 +184,21 @@ const LandingNew = () => {
                 transition={{ duration: 0.3 }}
               >
                 <div className="flex flex-col space-y-4">
-                  {['Our Products', 'Carrier', 'Help Center', 'About'].map((item) => (
-                    <a key={item} href="#" className="text-gray-300 hover:text-white transition-colors text-sm">
-                      {item}
-                    </a>
-                  ))}
-                  <a href="/landing" className="text-gray-300 hover:text-white transition-colors text-sm">
+                  <Link to="/dashboard" className="text-gray-300 hover:text-white transition-colors text-sm">
+                    Dashboard
+                  </Link>
+                  <Link to="/faq" className="text-gray-300 hover:text-white transition-colors text-sm">
+                    Help Center
+                  </Link>
+                  <Link to="/settings" className="text-gray-300 hover:text-white transition-colors text-sm">
+                    Settings
+                  </Link>
+                  <Link to="/landing" className="text-gray-300 hover:text-white transition-colors text-sm">
                     Original Landing
-                  </a>
+                  </Link>
                   <div className="flex items-center space-x-4 pt-4 border-t border-gray-700">
-                    <button className="text-gray-300 hover:text-white text-sm">log in</button>
-                    <button className="bg-green-600 px-4 py-2 rounded-md text-sm">Register</button>
+                    <Link to="/auth" className="text-gray-300 hover:text-white text-sm">log in</Link>
+                    <Link to="/auth" className="bg-green-600 px-4 py-2 rounded-md text-sm text-white">Register</Link>
                   </div>
                 </div>
               </motion.div>
@@ -244,7 +252,7 @@ const LandingNew = () => {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
-                Get Started
+                <Link to="/auth" className="text-white">Get Started</Link>
               </motion.button>
               
               <div className="flex items-center space-x-3">

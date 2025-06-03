@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="375" height="812" viewBox="0 0 375 812" fill="none">
+  <!-- iPhone Screen Background -->
+  <rect width="375" height="812" fill="#111827"/>
+  
+  <!-- Status Bar -->
+  <rect width="375" height="44" fill="#1F2937"/>
+  <text x="20" y="28" fill="white" font-family="Arial" font-size="14" font-weight="bold">9:41</text>
+  <text x="325" y="28" fill="white" font-family="Arial" font-size="12">100%</text>
+  
+  <!-- Header -->
+  <rect y="44" width="375" height="80" fill="#1F2937"/>
+  <text x="20" y="90" fill="white" font-family="Arial" font-size="24" font-weight="bold">FinFlow</text>
+  <text x="20" y="110" fill="#9CA3AF" font-family="Arial" font-size="14">Portfolio Overview</text>
+  
+  <!-- Balance Card -->
+  <rect x="20" y="140" width="335" height="120" rx="16" fill="#1F2937" stroke="#374151" stroke-width="1"/>
+  <text x="35" y="170" fill="#9CA3AF" font-family="Arial" font-size="14">Total Balance</text>
+  <text x="35" y="200" fill="white" font-family="Arial" font-size="32" font-weight="bold">$3,247.80</text>
+  <text x="35" y="225" fill="#10B981" font-family="Arial" font-size="14">+12.5% this month</text>
+  
+  <!-- Chart Area -->
+  <rect x="20" y="280" width="335" height="180" rx="16" fill="#1F2937" stroke="#374151" stroke-width="1"/>
+  <text x="35" y="310" fill="white" font-family="Arial" font-size="16" font-weight="bold">Spending Analytics</text>
+  
+  <!-- Simplified Chart -->
+  <path d="M 35 420 Q 100 380 150 390 T 250 370 T 340 380" stroke="#10B981" stroke-width="3" fill="none"/>
+  <circle cx="100" cy="385" r="4" fill="#10B981"/>
+  <circle cx="200" cy="375" r="4" fill="#10B981"/>
+  <circle cx="300" cy="380" r="4" fill="#10B981"/>
+  
+  <text x="35" y="445" fill="#6B7280" font-family="Arial" font-size="12">Jan</text>
+  <text x="100" y="445" fill="#6B7280" font-family="Arial" font-size="12">Feb</text>
+  <text x="200" y="445" fill="#6B7280" font-family="Arial" font-size="12">Mar</text>
+  <text x="300" y="445" fill="#6B7280" font-family="Arial" font-size="12">Apr</text>
+  
+  <!-- Categories -->
+  <text x="20" y="495" fill="white" font-family="Arial" font-size="18" font-weight="bold">Categories</text>
+  
+  <!-- Category Items -->
+  <rect x="20" y="510" width="335" height="50" rx="8" fill="#1F2937"/>
+  <rect x="35" y="525" width="12" height="12" rx="2" fill="#EF4444"/>
+  <text x="60" y="535" fill="white" font-family="Arial" font-size="14">Food & Dining</text>
+  <text x="60" y="548" fill="#6B7280" font-family="Arial" font-size="12">$234 this month</text>
+  <text x="320" y="535" fill="#EF4444" font-family="Arial" font-size="14">35%</text>
+  
+  <rect x="20" y="570" width="335" height="50" rx="8" fill="#1F2937"/>
+  <rect x="35" y="585" width="12" height="12" rx="2" fill="#3B82F6"/>
+  <text x="60" y="595" fill="white" font-family="Arial" font-size="14">Transportation</text>
+  <text x="60" y="608" fill="#6B7280" font-family="Arial" font-size="12">$89 this month</text>
+  <text x="320" y="595" fill="#3B82F6" font-family="Arial" font-size="14">13%</text>
+  
+  <rect x="20" y="630" width="335" height="50" rx="8" fill="#1F2937"/>
+  <rect x="35" y="645" width="12" height="12" rx="2" fill="#F59E0B"/>
+  <text x="60" y="655" fill="white" font-family="Arial" font-size="14">Entertainment</text>
+  <text x="60" y="668" fill="#6B7280" font-family="Arial" font-size="12">$156 this month</text>
+  <text x="320" y="655" fill="#F59E0B" font-family="Arial" font-size="14">23%</text>
+  
+  <!-- Bottom Navigation -->
+  <rect y="732" width="375" height="80" fill="#1F2937" stroke="#374151" stroke-width="1"/>
+  <rect x="75" y="752" width="40" height="40" rx="8" fill="#374151"/>
+  <text x="87" y="775" fill="#9CA3AF" font-family="Arial" font-size="12">🏠</text>
+  
+  <rect x="167.5" y="752" width="40" height="40" rx="8" fill="#10B981"/>
+  <text x="179.5" y="775" fill="white" font-family="Arial" font-size="12" font-weight="bold">📊</text>
+  
+  <rect x="260" y="752" width="40" height="40" rx="8" fill="#374151"/>
+  <text x="272" y="775" fill="#9CA3AF" font-family="Arial" font-size="12">⚙️</text>
+</svg> 

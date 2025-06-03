@@ -37,6 +37,7 @@ import { ReviewsSection } from '@/components/landing/ReviewsSection';
 import { StatisticCard } from '@/components/landing/StatisticCard';
 import { CommonQuestions } from '@/components/landing/CommonQuestions';
 import { FeatureCarousel } from '@/components/landing/FeatureCarousel';
+import IPhoneDisplay from '@/components/IPhoneDisplay';
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -285,6 +286,142 @@ const Landing = () => {
 
       {/* Security Features Section */}
       <SecurityFeatures />
+
+      {/* 3D iPhone Showcase Section */}
+      <section className="py-20 px-6 bg-gradient-to-b from-blue-50 to-white">
+        <div className="max-w-[1280px] mx-auto">
+          <div className="flex flex-col lg:flex-row items-center gap-12">
+            {/* Left Content */}
+            <motion.div 
+              className="w-full lg:w-1/2"
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.7 }}
+              viewport={{ once: true, margin: "-100px" }}
+            >
+              <h2 className="text-4xl md:text-5xl font-bold mb-6">
+                Experience FinFlow on Your Phone
+              </h2>
+              <p className="text-xl text-gray-600 mb-8 max-w-lg">
+                Manage your finances on the go with our beautiful, intuitive mobile interface. Track expenses, set budgets, and monitor your financial health right from your pocket.
+              </p>
+              <div className="space-y-4 mb-8">
+                <div className="flex items-center space-x-3">
+                  <div className="w-2 h-2 bg-finflow-blue rounded-full"></div>
+                  <span className="text-gray-700">Real-time transaction tracking</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="w-2 h-2 bg-finflow-blue rounded-full"></div>
+                  <span className="text-gray-700">Interactive budget visualization</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="w-2 h-2 bg-finflow-blue rounded-full"></div>
+                  <span className="text-gray-700">Secure biometric authentication</span>
+                </div>
+              </div>
+              <Button 
+                onClick={handleGetStarted}
+                className="bg-finflow-blue hover:bg-blue-700 text-white px-8 py-4"
+              >
+                Try Mobile App <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </motion.div>
+            
+            {/* Right Content - 3D iPhone Models */}
+            <motion.div 
+              className="w-full lg:w-1/2 relative"
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.7 }}
+              viewport={{ once: true, margin: "-100px" }}
+            >
+              <div className="relative flex justify-center items-center h-[600px]">
+                {/* Main iPhone */}
+                <motion.div 
+                  className="relative z-20 w-80 h-[500px]"
+                  animate={{ y: [-3, 3, -3] }}
+                  transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+                >
+                  <IPhoneDisplay
+                    screenImage="/screens/green-app.svg"
+                    scale={3.5}
+                    rotation={[0.1, 0.15, 0]}
+                    position={[0, 0, 0]}
+                    className="w-full h-full"
+                  />
+                </motion.div>
+
+                {/* Secondary iPhone (Background Left) */}
+                <motion.div 
+                  className="absolute -left-16 top-16 z-10 w-56 h-[380px]"
+                  initial={{ opacity: 0, x: -30 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.3, duration: 0.8 }}
+                  viewport={{ once: true }}
+                  animate={{ y: [-2, 2, -2] }}
+                  style={{ animationDelay: '1s' }}
+                >
+                  <IPhoneDisplay
+                    screenImage="/screens/dark-app.svg"
+                    scale={2.8}
+                    rotation={[0.1, -0.2, 0]}
+                    position={[0, 0, 0]}
+                    className="w-full h-full opacity-80"
+                  />
+                </motion.div>
+
+                {/* Third iPhone (Background Right) */}
+                <motion.div 
+                  className="absolute -right-16 top-24 z-0 w-48 h-[320px]"
+                  initial={{ opacity: 0, x: 30 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.5, duration: 0.8 }}
+                  viewport={{ once: true }}
+                  animate={{ y: [-1, 1, -1] }}
+                  style={{ animationDelay: '2s' }}
+                >
+                  <IPhoneDisplay
+                    screenImage="/screens/green-app.svg"
+                    scale={2.4}
+                    rotation={[0.1, 0.25, 0]}
+                    position={[0, 0, 0]}
+                    className="w-full h-full opacity-60"
+                  />
+                </motion.div>
+
+                {/* Floating Feature Cards */}
+                <motion.div
+                  className="absolute -right-8 top-8 w-32 h-20 bg-white rounded-lg shadow-lg p-3 z-30"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.8, duration: 0.6 }}
+                  viewport={{ once: true }}
+                  animate={{ y: [-2, 2, -2] }}
+                  style={{ animationDelay: '3s' }}
+                >
+                  <div className="text-green-600 text-xs font-semibold mb-1">Balance</div>
+                  <div className="text-gray-800 text-sm font-bold">$3,240</div>
+                  <div className="text-gray-500 text-xs">Available</div>
+                </motion.div>
+
+                <motion.div
+                  className="absolute -left-8 bottom-16 w-36 h-24 bg-white rounded-lg shadow-lg p-3 z-30"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 1, duration: 0.6 }}
+                  viewport={{ once: true }}
+                  animate={{ y: [-3, 3, -3] }}
+                  style={{ animationDelay: '4s' }}
+                >
+                  <div className="text-finflow-blue text-xs font-semibold mb-1">This Month</div>
+                  <div className="text-gray-800 text-sm font-bold">$1,240 saved</div>
+                  <div className="text-gray-500 text-xs">+12% vs last month</div>
+                </motion.div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
 
       {/* Budget Features Section */}
       <FeatureSection 

@@ -1,26 +1,19 @@
 /**
  * Categories Page
  * 
- * Manages transaction categories and their budgets.
- * Features:
- * - Create/Edit/Delete categories
- * - Category budget management
- * - Expense tracking by category
+ * Professional category management interface with:
+ * - Category cards with clean design
+ * - Budget tracking and progress indicators
  * - Visual spending breakdown
- * - Category color customization
- * - Separate handling for income and expense categories
- * 
- * Components:
- * - Category cards with progress indicators
- * - Category creation/edit modal
- * - Pie chart visualization
- * - Budget tracking
+ * - Category creation and management
+ * - Professional color scheme
  */
 
 import React, { useState, useMemo, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
@@ -43,7 +36,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Target, TrendingUp, TrendingDown, BarChart3 } from 'lucide-react';
 import CategoryChart from '@/components/CategoryChart';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -72,7 +65,7 @@ const categoryColors = [
 const Categories = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { fetchAllTransactions } = useTransactions();
+  const { fetchAllTransactions, transactions } = useTransactions();
   const { categories, loading: isLoading, error, refresh } = useCategoryStats();
 
   const [newCategory, setNewCategory] = useState({
@@ -85,6 +78,7 @@ const Categories = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [currentCategoryId, setCurrentCategoryId] = useState<string | undefined>(undefined);
+  const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAllTransactions();
@@ -104,8 +98,6 @@ const Categories = () => {
       }))
       .filter(entry => entry.value > 0);
   }, [expenseCategories]);
-
-  const pieChartLoading = isLoading;
 
   const handleSaveCategory = async () => {
     if (!user) return;
@@ -194,6 +186,7 @@ const Categories = () => {
       });
       await fetchAllTransactions();
       await refresh();
+      setCategoryToDelete(null);
     } catch (error) {
       console.error('Error deleting category:', error);
       toast({
@@ -237,273 +230,378 @@ const Categories = () => {
     }).format(amount);
   };
 
+  // Calculate summary statistics
+  const totalBudget = expenseCategories.reduce((sum, cat) => sum + (cat.budget || 0), 0);
+  const totalSpent = expenseCategories.reduce((sum, cat) => sum + cat.spent, 0);
+  const totalIncome = incomeCategories.reduce((sum, cat) => sum + cat.spent, 0);
+  const budgetUsagePercentage = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex justify-center items-center h-64">
+          <div className="h-12 w-12 rounded-full border-4 border-t-green-500 border-gray-300 animate-spin"></div>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
-      <div className="mb-6 flex justify-between items-start">
-        <div className="flex flex-col">
-          <h1 className="text-2xl font-bold mb-2">Categories</h1>
-          <p className="text-gray-500">Organize your finances by categories</p>
-        </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-finflow-blue flex items-center gap-2">
-              <Plus size={16} />
-              <span>Add Category</span>
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{isEditMode ? 'Edit Category' : 'Add New Category'}</DialogTitle>
-              <DialogDescription>
-                {isEditMode ? 'Update your category details.' : 'Create a new category to organize your transactions.'}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Category Name</Label>
-                <Input 
-                  id="name"
-                  value={newCategory.name}
-                  onChange={(e) => setNewCategory({...newCategory, name: e.target.value})}
-                  placeholder="e.g., Groceries"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="type">Category Type</Label>
-                <Select 
-                  value={newCategory.type} 
-                  onValueChange={(value: 'income' | 'expense') => setNewCategory({...newCategory, type: value})}
-                >
-                  <SelectTrigger id="type">
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="income">Income</SelectItem>
-                    <SelectItem value="expense">Expense</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="budget">Monthly Budget {newCategory.type === 'expense' ? '(spending limit)' : ''}</Label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <span className="text-gray-500">$</span>
-                  </div>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Categories</h1>
+            <p className="text-gray-500 mt-1">Organize your finances by categories and track spending</p>
+          </div>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button 
+                className="bg-green-600 hover:bg-green-700 text-white"
+                onClick={() => {
+                  setIsEditMode(false);
+                  resetForm();
+                }}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Category
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{isEditMode ? 'Edit Category' : 'Add New Category'}</DialogTitle>
+                <DialogDescription>
+                  {isEditMode 
+                    ? 'Update your category details and budget settings.' 
+                    : 'Create a new category to organize your transactions and set budget limits.'
+                  }
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="category-name">Category Name</Label>
                   <Input
-                    id="budget"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={newCategory.budget}
-                    onChange={(e) => setNewCategory({...newCategory, budget: parseFloat(e.target.value) || 0})}
-                    placeholder="0.00"
-                    className="pl-7"
+                    id="category-name"
+                    placeholder="e.g., Groceries, Entertainment"
+                    value={newCategory.name}
+                    onChange={(e) => setNewCategory({...newCategory, name: e.target.value})}
                   />
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Color</Label>
-                <div className="grid grid-cols-4 gap-2">
-                  {categoryColors.map((color) => (
-                    <button
-                      key={color.value}
-                      type="button"
-                      onClick={() => setNewCategory({...newCategory, color: color.value})}
-                      className={`h-10 rounded-md ${color.bg} ${newCategory.color === color.value ? 'ring-2 ring-offset-2 ring-black' : ''}`}
-                      title={color.label}
-                    />
-                  ))}
+                
+                <div className="space-y-2">
+                  <Label htmlFor="category-type">Type</Label>
+                  <Select value={newCategory.type} onValueChange={(value: 'income' | 'expense') => setNewCategory({...newCategory, type: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="expense">Expense</SelectItem>
+                      <SelectItem value="income">Income</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={resetForm}>Cancel</Button>
-              <Button onClick={handleSaveCategory}>
-                {isEditMode ? 'Update Category' : 'Add Category'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {isLoading ? (
-        <div className="flex justify-center py-12">
-          <div className="h-12 w-12 rounded-full border-4 border-t-blue-600 border-gray-200 animate-spin"></div>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="md:col-span-2">
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-semibold">Expense Categories</h2>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => {
-                        fetchAllTransactions();
-                        refresh();
-                      }}
-                    >
-                      Refresh Data
-                    </Button>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="category-budget">Budget (Optional)</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                    <Input
+                      id="category-budget"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      className="pl-8"
+                      placeholder="0.00"
+                      value={newCategory.budget || ''}
+                      onChange={(e) => setNewCategory({...newCategory, budget: parseFloat(e.target.value) || 0})}
+                    />
                   </div>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {expenseCategories.map(category => (
-                      <div 
-                        key={category.id} 
-                        className="bg-white border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow flex flex-col"
-                      >
-                        <div className="flex justify-between items-center mb-3">
-                          <div className="flex items-center space-x-3">
-                            <div 
-                              className="w-8 h-8 rounded-full flex items-center justify-center" 
-                              style={{backgroundColor: category.color}}
-                            >
-                              <span className="text-white font-semibold">{category.name.charAt(0)}</span>
-                            </div>
-                            <div className="flex flex-col">
-                              <h3 className="font-medium text-base">{category.name}</h3>
-                              <p className="text-sm text-gray-500">{category.transactions} transactions</p>
-                            </div>
-                          </div>
-                          <div className="flex space-x-1">
-                            <button 
-                              onClick={() => handleEditCategory(category)}
-                              className="text-gray-500 hover:text-gray-700 p-1"
-                            >
-                              <Pencil size={16} />
-                            </button>
-                            <button 
-                              onClick={() => handleDeleteCategory(category.id!)}
-                              className="text-gray-500 hover:text-red-600 p-1"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        </div>
-                        <div className="mt-auto">
-                          <div className="flex justify-between text-sm mb-1">
-                            <span>Spent: {formatCurrency(category.spent || 0)}</span>
-                            <span>Budget: {formatCurrency(category.budget || 0)}</span>
-                          </div>
-                          <Progress 
-                            value={category.budget > 0 ? Math.min((category.spent / category.budget) * 100, 100) : 0} 
-                            className="h-2"
-                            indicatorColor={category.color}
-                          />
-                        </div>
-                      </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Color</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {categoryColors.map((color) => (
+                      <button
+                        key={color.value}
+                        type="button"
+                        className={`w-8 h-8 rounded-full border-2 transition-all ${
+                          newCategory.color === color.value 
+                            ? 'border-gray-900 scale-110' 
+                            : 'border-gray-300 hover:scale-105'
+                        }`}
+                        style={{ backgroundColor: color.value }}
+                        onClick={() => setNewCategory({...newCategory, color: color.value})}
+                      />
                     ))}
                   </div>
-                </CardContent>
-              </Card>
-            </div>
-            <div>
-              <Card>
-                <CardContent className="p-6">
-                  <h2 className="text-xl font-semibold mb-4">Expense Breakdown</h2>
-                  {pieChartLoading ? (
-                    <div className="flex flex-col items-center justify-center h-64">
-                      <div className="h-12 w-12 rounded-full border-4 border-t-blue-600 border-gray-200 animate-spin mb-4"></div>
-                      <p className="text-gray-500">Loading chart...</p>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={resetForm}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleSaveCategory}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  {isEditMode ? 'Update Category' : 'Add Category'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <Card className="bg-white border-0 shadow-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-500 mb-1">Total Categories</p>
+                  <p className="text-2xl font-bold text-gray-900">{categories.length}</p>
+                </div>
+                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <Target className="h-5 w-5 text-blue-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white border-0 shadow-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-500 mb-1">Total Budget</p>
+                  <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalBudget)}</p>
+                </div>
+                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                  <TrendingUp className="h-5 w-5 text-green-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white border-0 shadow-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-500 mb-1">Total Spent</p>
+                  <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalSpent)}</p>
+                  <div className="flex items-center mt-1">
+                    <TrendingDown className="h-3 w-3 text-red-500 mr-1" />
+                    <span className="text-xs text-red-500">{budgetUsagePercentage.toFixed(0)}% of budget</span>
+                  </div>
+                </div>
+                <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                  <TrendingDown className="h-5 w-5 text-red-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white border-0 shadow-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-500 mb-1">Remaining Budget</p>
+                  <p className="text-2xl font-bold text-gray-900">{formatCurrency(Math.max(0, totalBudget - totalSpent))}</p>
+                </div>
+                <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <BarChart3 className="h-5 w-5 text-purple-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Categories List */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Expense Categories */}
+            <Card className="bg-white border-0 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold text-gray-900">Expense Categories</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {expenseCategories.length === 0 ? (
+                  <div className="text-center py-8">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Target className="h-8 w-8 text-gray-400" />
                     </div>
-                  ) : pieChartData.length > 0 ? (
-                    <div className="w-full flex flex-col items-center">
-                      <CategoryChart 
-                        data={pieChartData}
-                      />
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-64">
-                      <p className="text-gray-500 mb-4">No expense transactions yet</p>
-                      <Button onClick={() => setIsDialogOpen(true)}>
-                        Add Your First Category
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-          <div className="w-full">
-            <Card>
-              <CardContent className="p-6">
-                <h2 className="text-xl font-semibold mb-4">Income Categories</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {incomeCategories.map(category => (
-                    <div 
-                      key={category.id}
-                      className="bg-white border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow"
+                    <p className="text-gray-500 mb-4">No expense categories yet</p>
+                    <Button 
+                      onClick={() => setIsDialogOpen(true)}
+                      className="bg-green-600 hover:bg-green-700"
                     >
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center">
-                          <div 
-                            className="w-8 h-8 rounded-full flex items-center justify-center mr-3" 
-                            style={{backgroundColor: category.color}}
-                          >
-                            <span className="text-white">{category.name.charAt(0)}</span>
+                      Add First Category
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {expenseCategories.map((category) => (
+                      <motion.div
+                        key={category.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="p-4 border border-gray-200 rounded-lg hover:shadow-sm transition-all"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div 
+                              className="w-4 h-4 rounded-full"
+                              style={{ backgroundColor: category.color }}
+                            />
+                            <div>
+                              <h3 className="font-medium text-gray-900">{category.name}</h3>
+                              <p className="text-sm text-gray-500">
+                                {formatCurrency(category.spent)} of {formatCurrency(category.budget || 0)}
+                              </p>
+                            </div>
                           </div>
-                          <span className="font-medium">{category.name}</span>
+                          
+                          <div className="flex items-center space-x-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditCategory(category)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setCategoryToDelete(category.id)}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
-                        <div className="flex space-x-1">
-                          <button 
+                        
+                        {category.budget > 0 && (
+                          <div className="mt-3">
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="text-xs text-gray-500">Budget Progress</span>
+                              <span className="text-xs text-gray-500">
+                                {((category.spent / category.budget) * 100).toFixed(0)}%
+                              </span>
+                            </div>
+                            <Progress 
+                              value={(category.spent / category.budget) * 100} 
+                              className="h-2"
+                            />
+                          </div>
+                        )}
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Income Categories */}
+            {incomeCategories.length > 0 && (
+              <Card className="bg-white border-0 shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-lg font-semibold text-gray-900">Income Categories</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {incomeCategories.map((category) => (
+                    <motion.div
+                      key={category.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="p-4 border border-gray-200 rounded-lg hover:shadow-sm transition-all"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div 
+                            className="w-4 h-4 rounded-full"
+                            style={{ backgroundColor: category.color }}
+                          />
+                          <div>
+                            <h3 className="font-medium text-gray-900">{category.name}</h3>
+                            <p className="text-sm text-gray-500">
+                              {formatCurrency(category.spent)} received
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => handleEditCategory(category)}
-                            className="text-gray-500 hover:text-gray-700 p-1"
                           >
-                            <Pencil size={16} />
-                          </button>
-                          <button 
-                            onClick={() => handleDeleteCategory(category.id!)}
-                            className="text-gray-500 hover:text-red-600 p-1"
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setCategoryToDelete(category.id)}
+                            className="text-red-600 hover:text-red-700"
                           >
-                            <Trash2 size={16} />
-                          </button>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
                   ))}
-                  {incomeCategories.length === 0 && (
-                    <div className="text-center py-6 col-span-full">
-                      <p className="text-gray-500 mb-3">No income categories yet</p>
-                      <Button 
-                        variant="outline" 
-                        onClick={() => {
-                          setNewCategory({...newCategory, type: 'income'});
-                          setIsDialogOpen(true);
-                        }}
-                      >
-                        Add Income Category
-                      </Button>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* Chart Section */}
+          <div className="space-y-6">
+            <Card className="bg-white border-0 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold text-gray-900">Spending Overview</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {expenseCategories.length > 0 ? (
+                  <div className="h-[300px]">
+                    <CategoryChart transactions={transactions} />
+                  </div>
+                ) : (
+                  <div className="h-[300px] flex items-center justify-center">
+                    <div className="text-center">
+                      <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                      <p className="text-gray-500">No spending data available</p>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
         </div>
-      )}
 
-      <AlertDialog open={!!currentCategoryId} onOpenChange={() => setCurrentCategoryId(undefined)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete this category and all its associated data. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-red-600 hover:bg-red-700"
-              onClick={() => currentCategoryId && handleDeleteCategory(currentCategoryId)}
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={!!categoryToDelete} onOpenChange={() => setCategoryToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the category
+                and all associated data.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-red-600 hover:bg-red-700"
+                onClick={() => categoryToDelete && handleDeleteCategory(categoryToDelete)}
+              >
+                Delete Category
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
     </Layout>
   );
 };

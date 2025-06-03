@@ -34,12 +34,12 @@ const TransactionsChart: React.FC<TransactionsChartProps> = ({ data, type = 'are
   const customTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white p-3 shadow-lg rounded-lg border border-gray-100">
-          <p className="font-medium mb-2">{label}</p>
-          <p className="text-sm text-green-600">
+        <div className="bg-white dark:bg-gray-800 p-3 shadow-lg rounded-lg border border-gray-200 dark:border-gray-600">
+          <p className="font-medium mb-2 text-gray-900 dark:text-white">{label}</p>
+          <p className="text-sm text-green-600 dark:text-green-400">
             Income: ${payload[0].value.toFixed(2)}
           </p>
-          <p className="text-sm text-red-600">
+          <p className="text-sm text-red-600 dark:text-red-400">
             Expenses: ${payload[1].value.toFixed(2)}
           </p>
         </div>
@@ -81,41 +81,35 @@ Would you like some advice on managing your finances for this period?`;
     <AreaChart {...chartProps} data={reverseData(data)} onClick={handleChartClick}>
       <defs>
         <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
+          <stop offset="5%" stopColor="#22c55e" stopOpacity={0.2} />
           <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
         </linearGradient>
         <linearGradient id="colorExpenses" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
+          <stop offset="5%" stopColor="#ef4444" stopOpacity={0.2} />
           <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
         </linearGradient>
       </defs>
-      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(156, 163, 175, 0.2)" />
       <XAxis 
         dataKey="date" 
-        tick={{ fontSize: 12, fill: '#6b7280' }}
+        tick={{ fontSize: 12, fill: '#9ca3af' }}
         tickLine={false}
-        axisLine={{ stroke: '#e5e7eb' }}
+        axisLine={false}
       />
       <YAxis 
         tickFormatter={formatYAxis} 
-        tick={{ fontSize: 12, fill: '#6b7280' }}
+        tick={{ fontSize: 12, fill: '#9ca3af' }}
         tickLine={false}
-        axisLine={{ stroke: '#e5e7eb' }}
+        axisLine={false}
       />
       <Tooltip content={customTooltip} />
-      <Legend
-        iconType="circle"
-        iconSize={8}
-        formatter={(value) => <span className="text-sm capitalize">{value}</span>}
-        wrapperStyle={{ paddingTop: '10px' }}
-      />
       <Area 
         type="monotone" 
         dataKey="income" 
         stroke="#22c55e" 
         strokeWidth={2}
         fill="url(#colorIncome)" 
-        activeDot={{ r: 6 }} 
+        activeDot={{ r: 4, stroke: '#22c55e', strokeWidth: 2 }} 
         name="Income"
       />
       <Area 
@@ -124,7 +118,7 @@ Would you like some advice on managing your finances for this period?`;
         stroke="#ef4444" 
         strokeWidth={2}
         fill="url(#colorExpenses)" 
-        activeDot={{ r: 6 }} 
+        activeDot={{ r: 4, stroke: '#ef4444', strokeWidth: 2 }} 
         name="Expenses"
       />
     </AreaChart>
@@ -132,24 +126,24 @@ Would you like some advice on managing your finances for this period?`;
 
   const renderLineChart = () => (
     <LineChart {...chartProps} data={reverseData(data)} onClick={handleChartClick}>
-      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#374151" />
       <XAxis 
         dataKey="date" 
-        tick={{ fontSize: 12, fill: '#6b7280' }}
+        tick={{ fontSize: 12, fill: '#9ca3af' }}
         tickLine={false}
-        axisLine={{ stroke: '#e5e7eb' }}
+        axisLine={{ stroke: '#4b5563' }}
       />
       <YAxis 
         tickFormatter={formatYAxis} 
-        tick={{ fontSize: 12, fill: '#6b7280' }}
+        tick={{ fontSize: 12, fill: '#9ca3af' }}
         tickLine={false}
-        axisLine={{ stroke: '#e5e7eb' }}
+        axisLine={{ stroke: '#4b5563' }}
       />
       <Tooltip content={customTooltip} />
       <Legend
         iconType="circle"
         iconSize={8}
-        formatter={(value) => <span className="text-sm capitalize">{value}</span>}
+        formatter={(value) => <span className="text-sm capitalize text-gray-300">{value}</span>}
         wrapperStyle={{ paddingTop: '10px' }}
       />
       <Line 
@@ -159,7 +153,7 @@ Would you like some advice on managing your finances for this period?`;
         strokeWidth={2}
         activeDot={{ r: 6 }} 
         name="Income"
-        dot={{ stroke: '#22c55e', strokeWidth: 2, r: 4, fill: 'white' }}
+        dot={{ stroke: '#22c55e', strokeWidth: 2, r: 4, fill: '#1f2937' }}
       />
       <Line 
         type="monotone" 
@@ -168,50 +162,50 @@ Would you like some advice on managing your finances for this period?`;
         strokeWidth={2}
         activeDot={{ r: 6 }} 
         name="Expenses"
-        dot={{ stroke: '#ef4444', strokeWidth: 2, r: 4, fill: 'white' }}
+        dot={{ stroke: '#ef4444', strokeWidth: 2, r: 4, fill: '#1f2937' }}
       />
     </LineChart>
   );
 
   const renderBarChart = () => (
     <BarChart {...chartProps} data={reverseData(data)} onClick={handleChartClick}>
-      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#374151" />
       <XAxis 
         dataKey="date" 
-        tick={{ fontSize: 12, fill: '#6b7280' }}
+        tick={{ fontSize: 12, fill: '#9ca3af' }}
         tickLine={false}
-        axisLine={{ stroke: '#e5e7eb' }}
+        axisLine={{ stroke: '#4b5563' }}
       />
       <YAxis 
         tickFormatter={formatYAxis} 
-        tick={{ fontSize: 12, fill: '#6b7280' }}
+        tick={{ fontSize: 12, fill: '#9ca3af' }}
         tickLine={false}
-        axisLine={{ stroke: '#e5e7eb' }}
+        axisLine={{ stroke: '#4b5563' }}
       />
       <Tooltip content={customTooltip} />
       <Legend
         iconType="circle"
         iconSize={8}
-        formatter={(value) => <span className="text-sm capitalize">{value}</span>}
+        formatter={(value) => <span className="text-sm capitalize text-gray-300">{value}</span>}
         wrapperStyle={{ paddingTop: '10px' }}
       />
       <Bar 
         dataKey="income" 
         fill="#22c55e" 
         name="Income"
-        radius={[4, 4, 0, 0]}
+        radius={[2, 2, 0, 0]}
       />
       <Bar 
         dataKey="expenses" 
         fill="#ef4444" 
         name="Expenses"
-        radius={[4, 4, 0, 0]}
+        radius={[2, 2, 0, 0]}
       />
     </BarChart>
   );
 
   return (
-    <div className="h-[400px] w-full bg-white p-4 rounded-lg">
+    <div className="h-[400px] w-full">
       <ResponsiveContainer width="100%" height="100%">
         {type === 'line' ? renderLineChart() : 
          type === 'bar' ? renderBarChart() : 
