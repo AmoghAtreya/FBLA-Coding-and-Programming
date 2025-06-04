@@ -63,6 +63,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isRightSidebarCollapsed, setIsRightSidebarCollapsed] = useState(false);
   const [isCardSectionCollapsed, setIsCardSectionCollapsed] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const totalExpenses = transactions.reduce((total, transaction) => total + transaction.amount, 0).toLocaleString();
+
 
   // Calculate actual transaction count for notification
   const recentTransactionsCount = transactions.filter(t => {
@@ -467,15 +469,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                                 {/* Card Header */}
                                 <div className="flex justify-between items-start">
                                   <div>
-                                    <p className="text-white/90 text-xs mb-1 font-medium">John Smith</p>
-                                    <p className="text-white font-semibold text-sm tracking-wide">Amazon Platinum</p>
+                                    <p className="text-white/90 text-xs mb-1 font-medium text-left">{user?.email?.split('@')[0] || 'Aksara Pratama M'}</p>
+                                    {/* <p className="text-white font-semibold text-sm tracking-wide">Amazon Platinum</p> */}
                                   </div>
                                   <div className="text-right">
-                                    <div className="flex items-center space-x-1">
+                                    <div className="flex items-center space-x">
                                       <div className="w-6 h-6 bg-orange-500 rounded-full opacity-90"></div>
                                       <div className="w-6 h-6 bg-red-500 rounded-full opacity-90 -ml-2"></div>
                                     </div>
-                                    <p className="text-xs text-white/70 font-mono mt-1">VISA</p>
+                                    <p className="text-xs text-white/70 font-mono mt-1">Mastercard</p>
                                   </div>
                                 </div>
                                 
@@ -522,7 +524,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                           <div className="space-y-5">
                             <div className="bg-gray-50 rounded-lg p-4">
                               <p className="text-sm text-gray-500 mb-2">Card holder</p>
-                              <p className="font-semibold text-gray-900 text-lg">John Smith</p>
+                              <p className="font-semibold text-gray-900 text-lg">{user?.email?.split('@')[0] || 'Aksara Pratama M'}</p>
                             </div>
                             
                             <div className="bg-gray-50 rounded-lg p-4">
@@ -563,11 +565,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                               <div className="grid grid-cols-2 gap-4">
                                 <div>
                                   <p className="text-xs text-gray-500 mb-1">Spent</p>
-                                  <p className="font-bold text-gray-900">$2,840</p>
+                                  <p className="font-bold text-gray-900">${totalExpenses.toLocaleString()}</p>
                                 </div>
                                 <div>
                                   <p className="text-xs text-gray-500 mb-1">Cashback</p>
-                                  <p className="font-bold text-green-600">$28.40</p>
+                                  <p className="font-bold text-green-600">${(parseFloat(totalExpenses) * 10.12).toLocaleString()}</p>
                                 </div>
                               </div>
                             </div>
