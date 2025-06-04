@@ -6,12 +6,14 @@
  * - Modern controls with search/filters
  * - Clean table layout
  * - Professional card-based design
+ * - Working time period controls for graphs
  */
 
 import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import Layout from '@/components/Layout';
 import TransactionsChart from '@/components/TransactionsChart';
+import CreateTransactionModal from '@/components/CreateTransactionModal';
 import DateRangeSelector, { DateRangePreset } from '@/components/DateRangeSelector';
 import AccountSelector from '@/components/AccountSelector';
 import { useTransactions } from '@/context/TransactionContext';
@@ -37,6 +39,8 @@ import {
 } from 'lucide-react';
 import { format, subDays, startOfDay, endOfDay, isWithinInterval } from 'date-fns';
 
+type TimePeriod = 'week'|'daily' | 'weekly' | 'monthly' | 'yearly';
+
 const Transactions = () => {
   const { transactions, loading: transactionsLoading, fetchAllTransactions } = useTransactions();
   const { accounts } = useAccounts();
@@ -48,12 +52,16 @@ const Transactions = () => {
   
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAccount, setSelectedAccount] = useState('All accounts');
-  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All categories');
   const [showCreateTransaction, setShowCreateTransaction] = useState(false);
   const [sortBy, setSortBy] = useState<'date' | 'amount' | 'category'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>('monthly');
 
   const accountNames = ['All accounts', ...accounts.map(acc => acc.name)];
+  
+  // Get all categories from transactions
+  const allCategories = ['All categories', ...Array.from(new Set(transactions.map(t => t.category).filter(Boolean)))];
   
   const filteredTransactions = useMemo(() => {
     return transactions.filter(transaction => {
@@ -110,6 +118,35 @@ const Transactions = () => {
     });
   };
 
+  const handleTimePeriodChange = (period: TimePeriod) => {
+    setTimePeriod(period);
+    const today = new Date();
+    let start: Date;
+    let end = endOfDay(today);
+    
+    switch(period) {
+      case 'week':
+        start = startOfDay(subDays(today, 7)); // Last 7 days
+        break;
+      case 'daily':
+        start = startOfDay(subDays(today, 30)); // Last 30 days
+        break;
+      case 'weekly':
+        start = startOfDay(subDays(today, 90)); // Last 3 months
+        break;
+      case 'monthly':
+        start = startOfDay(subDays(today, 365)); // Last 12 months
+        break;
+      case 'yearly':
+        start = startOfDay(subDays(today, 365 * 3)); // Last 3 years
+        break;
+      default:
+        start = startOfDay(subDays(today, 30));
+    }
+    
+    setDateRange({ startDate: start, endDate: end });
+  };
+
   const handlePresetChange = (preset: DateRangePreset) => {
     const today = new Date();
     let start: Date;
@@ -144,9 +181,24 @@ const Transactions = () => {
   const chartData = useMemo(() => {
     const dateGroups: Record<string, { date: string, income: number, expenses: number }> = {};
     
+    const getDateFormat = (date: Date) => {
+      switch(timePeriod) {
+        case 'daily':
+          return format(date, 'MMM d');
+        case 'weekly':
+          return `Week ${Math.ceil(date.getDate() / 7)} - ${format(date, 'MMM')}`;
+        case 'monthly':
+          return format(date, 'MMM yyyy');
+        case 'yearly':
+          return format(date, 'yyyy');
+        default:
+          return format(date, 'MMM d');
+      }
+    };
+    
     filteredTransactions.forEach(transaction => {
       const date = new Date(transaction.date);
-      const dateStr = format(date, 'MMM d');
+      const dateStr = getDateFormat(date);
       
       if (!dateGroups[dateStr]) {
         dateGroups[dateStr] = { date: dateStr, income: 0, expenses: 0 };
@@ -160,7 +212,30 @@ const Transactions = () => {
     });
     
     return Object.values(dateGroups);
-  }, [filteredTransactions]);
+  }, [filteredTransactions, timePeriod]);
+
+  const handleExportCSV = () => {
+    const csvContent = 'Date,Description,Amount,Category,Account,Type\n' + 
+      filteredTransactions.map(t => {
+        const date = format(new Date(t.date), 'yyyy-MM-dd');
+        const description = (t.description || t.category || 'No description').replace(/"/g, '""');
+        const amount = t.amount;
+        const category = (t.category || 'Uncategorized').replace(/"/g, '""');
+        const account = (t.channel || 'Unknown').replace(/"/g, '""');
+        const type = t.amount >= 0 ? 'Income' : 'Expense';
+        return `${date},"${description}",${amount},"${category}","${account}","${type}"`;
+      }).join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `transactions-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   if (transactionsLoading) {
     return (
@@ -181,7 +256,10 @@ const Transactions = () => {
             <h1 className="text-2xl font-bold text-gray-900">Transactions</h1>
             <p className="text-gray-500 mt-1">Manage and track all your financial transactions</p>
           </div>
-          <Button className="bg-green-600 hover:bg-green-700 text-white">
+          <Button 
+            className="bg-green-600 hover:bg-green-700 text-white"
+            onClick={() => setShowCreateTransaction(true)}
+          >
             <Plus className="h-4 w-4 mr-2" />
             Add Transaction
           </Button>
@@ -291,8 +369,7 @@ const Transactions = () => {
                   onChange={(e) => setSelectedCategory(e.target.value)}
                   className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                 >
-                  <option value="">All Categories</option>
-                  {Array.from(new Set(transactions.map(t => t.category).filter(Boolean))).map(category => (
+                  {allCategories.map(category => (
                     <option key={category} value={category}>{category}</option>
                   ))}
                 </select>
@@ -302,7 +379,6 @@ const Transactions = () => {
                   onChange={(e) => setSelectedAccount(e.target.value)}
                   className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                 >
-                  <option value="">All Accounts</option>
                   {accountNames.map(account => (
                     <option key={account} value={account}>{account}</option>
                   ))}
@@ -324,14 +400,42 @@ const Transactions = () => {
           </CardContent>
         </Card>
 
-        {/* Chart */}
+        {/* Chart with Time Period Controls */}
         <Card className="bg-white border-0 shadow-sm">
           <CardHeader className="pb-4">
-            <CardTitle className="text-lg font-semibold text-gray-900">Transaction Trends</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg font-semibold text-gray-900">Transaction Trends</CardTitle>
+              <div className="flex items-center space-x-2">
+                {(['week', 'daily', 'weekly', 'monthly', 'yearly'] as TimePeriod[]).map((period) => (
+                  <button
+                    key={period}
+                    onClick={() => handleTimePeriodChange(period)}
+                    className={`text-sm px-3 py-1 rounded-md transition-colors ${
+                      timePeriod === period 
+                        ? 'bg-green-100 text-green-800 font-medium' 
+                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    {
+                    period === 'week' ? '7 days' : 
+                    period === 'daily' ? '30 days' : 
+                     period === 'weekly' ? '3 months' : 
+                     period === 'monthly' ? '12 months' : 
+                     '3 years'}
+                  </button>
+                ))}
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
-              <TransactionsChart data={chartData} type="area" />
+              <TransactionsChart 
+                data={chartData} 
+                type="area" 
+                height={300}
+                timePeriod={timePeriod}
+                showNet={true}
+              />
             </div>
           </CardContent>
         </Card>
@@ -347,45 +451,31 @@ const Transactions = () => {
                   size="sm" 
                   className="text-gray-500"
                   onClick={() => {
-                    const startDate = dateRange.startDate.toISOString().split('T')[0];
-                    const endDate = dateRange.endDate.toISOString().split('T')[0];
+                    const today = new Date();
+                    const weekAgo = subDays(today, 7);
                     setDateRange({
-                      startDate: new Date(startDate),
-                      endDate: new Date(endDate)
+                      startDate: startOfDay(weekAgo),
+                      endDate: endOfDay(today)
                     });
                   }}
                 >
                   <Calendar className="h-4 w-4 mr-2" />
-                  Select dates
+                  Last 7 days
                 </Button>
                 
                 <Button 
                   variant="ghost" 
                   size="sm" 
                   className="text-gray-500"
-                  onClick={() => {
-                    const csvContent = 'Date,Description,Amount,Category,Account\n' + 
-                      filteredTransactions.map(t => 
-                        `${format(new Date(t.date), 'yyyy-MM-dd')},"${t.description || t.category}",${t.amount},"${t.category}","${t.channel}"`
-                      ).join('\n');
-                    const blob = new Blob([csvContent], { type: 'text/csv' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `transactions-${format(new Date(), 'yyyy-MM-dd')}.csv`;
-                    a.click();
-                  }}
+                  onClick={handleExportCSV}
                 >
-                  <Filter className="h-4 w-4 mr-2" />
+                  <Download className="h-4 w-4 mr-2" />
                   Export CSV
                 </Button>
                 
                 <Button 
                   className="bg-green-600 hover:bg-green-700 text-white"
-                  onClick={() => {
-                    // Open transaction creation modal
-                    setShowCreateTransaction(true);
-                  }}
+                  onClick={() => setShowCreateTransaction(true)}
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Add Transaction
@@ -467,6 +557,12 @@ const Transactions = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Create Transaction Modal */}
+        <CreateTransactionModal
+          isOpen={showCreateTransaction}
+          onClose={() => setShowCreateTransaction(false)}
+        />
       </div>
     </Layout>
   );

@@ -3,7 +3,7 @@
  * 
  * Professional financial dashboard with:
  * - Financial summary cards (total money, income, expenses)
- * - Money analytics chart with time period controls
+ * - Money analytics chart with working time period controls
  * - Transaction history table
  * - Clean layout without right sidebar (handled by Layout)
  */
@@ -12,6 +12,7 @@ import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import Layout from '@/components/Layout';
 import TransactionsChart from '@/components/TransactionsChart';
+import CreateTransactionModal from '@/components/CreateTransactionModal';
 import { useAuth } from '@/context/AuthContext';
 import { useTransactions } from '@/context/TransactionContext';
 import { useAccounts } from '@/context/AccountContext';
@@ -39,6 +40,33 @@ const Index = () => {
 
   const [selectedAccount, setSelectedAccount] = useState('All accounts');
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('monthly');
+  const [showCreateTransaction, setShowCreateTransaction] = useState(false);
+
+  const handleTimePeriodChange = (period: TimePeriod) => {
+    setTimePeriod(period);
+    const today = new Date();
+    let start: Date;
+    let end = endOfDay(today);
+    
+    switch(period) {
+      case 'daily':
+        start = startOfDay(subDays(today, 30)); // Last 30 days
+        break;
+      case 'weekly':
+        start = startOfDay(subDays(today, 90)); // Last 3 months
+        break;
+      case 'monthly':
+        start = startOfDay(subDays(today, 365)); // Last 12 months
+        break;
+      case 'yearly':
+        start = startOfDay(subDays(today, 365 * 3)); // Last 3 years
+        break;
+      default:
+        start = startOfDay(subDays(today, 30));
+    }
+    
+    setDateRange({ startDate: start, endDate: end });
+  };
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter(transaction => {
@@ -121,6 +149,15 @@ const Index = () => {
   // Get recent transactions for the table
   const recentTransactions = filteredTransactions.slice(0, 5);
 
+  const handleQuickFilterChange = (days: number) => {
+    const today = new Date();
+    const start = startOfDay(subDays(today, days));
+    setDateRange({
+      startDate: start,
+      endDate: endOfDay(today)
+    });
+  };
+
   if (isLoading) {
     return (
       <Layout>
@@ -170,12 +207,12 @@ const Index = () => {
             <CardContent className="p-8">
               <div className="space-y-4">
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">This month's income</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">This period's income</h3>
                   <p className="text-5xl font-bold text-gray-900 mb-3">${totalIncome.toLocaleString()}</p>
                   <div className="flex items-center">
                     <TrendingUp className="h-6 w-6 text-green-500 mr-3" />
                     <span className="text-xl text-green-500 font-semibold">{incomePercentChange}%</span>
-                    <span className="text-base text-gray-500 ml-3">vs last month</span>
+                    <span className="text-base text-gray-500 ml-3">vs last period</span>
                   </div>
                 </div>
               </div>
@@ -187,12 +224,12 @@ const Index = () => {
             <CardContent className="p-8">
               <div className="space-y-4">
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Expenses this month</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Expenses this period</h3>
                   <p className="text-5xl font-bold text-gray-900 mb-3">${totalExpenses.toLocaleString()}</p>
                   <div className="flex items-center">
                     <TrendingUp className="h-6 w-6 text-red-500 mr-3" />
                     <span className="text-xl text-red-500 font-semibold">{expensePercentChange}%</span>
-                    <span className="text-base text-gray-500 ml-3">vs last month</span>
+                    <span className="text-base text-gray-500 ml-3">vs last period</span>
                   </div>
                 </div>
               </div>
@@ -200,37 +237,62 @@ const Index = () => {
           </Card>
         </div>
 
-        {/* Money Analytics */}
+        {/* Money Analytics with Working Time Controls */}
         <Card className="bg-white border-0 shadow-sm">
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg font-semibold text-gray-900">Money Analytics</CardTitle>
-              <Button variant="ghost" size="sm" className="text-gray-500">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-gray-500"
+                onClick={() => window.location.href = '/analytics'}
+              >
                 View report
               </Button>
             </div>
-            <div className="flex items-center space-x-6 mt-4">
-              {(['monthly', 'weekly', 'daily'] as TimePeriod[]).map((period) => (
+            <div className="flex items-center justify-between mt-4">
+              <div className="flex items-center space-x-6">
+                {(['monthly', 'weekly', 'daily'] as TimePeriod[]).map((period) => (
+                  <button
+                    key={period}
+                    onClick={() => handleTimePeriodChange(period)}
+                    className={`text-sm px-3 py-1 rounded-md transition-colors ${
+                      timePeriod === period 
+                        ? 'bg-green-100 text-green-800 font-medium' 
+                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    {period === 'monthly' ? '12 months' : period === 'weekly' ? '3 months' : '30 days'}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center space-x-4">
+                <span className="text-sm text-gray-400">|</span>
                 <button
-                  key={period}
-                  onClick={() => setTimePeriod(period)}
-                  className={`text-sm px-3 py-1 rounded-md transition-colors ${
-                    timePeriod === period 
-                      ? 'bg-gray-100 text-gray-900 font-medium' 
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
+                  onClick={() => handleQuickFilterChange(7)}
+                  className="text-sm text-gray-500 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-100"
                 >
-                  {period === 'monthly' ? '12 months' : period === 'weekly' ? '3 months' : '30 days'}
+                  7 days
                 </button>
-              ))}
-              <span className="text-sm text-gray-400">|</span>
-              <span className="text-sm text-gray-500">7 days</span>
-              <span className="text-sm text-gray-500">24 hours</span>
+                <button
+                  onClick={() => handleQuickFilterChange(1)}
+                  className="text-sm text-gray-500 hover:text-gray-700 px-2 py-1 rounded hover:bg-gray-100"
+                >
+                  24 hours
+                </button>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="p-6 pt-0">
             <div className="h-[300px]">
-              <TransactionsChart data={chartData} type="area" />
+              <TransactionsChart 
+                data={chartData} 
+                type="area" 
+                height={300}
+                timePeriod={timePeriod}
+                showNet={false}
+              />
             </div>
           </CardContent>
         </Card>
@@ -241,13 +303,30 @@ const Index = () => {
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg font-semibold text-gray-900">Transaction History</CardTitle>
               <div className="flex items-center space-x-2">
-                <Button variant="ghost" size="sm" className="text-gray-500">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-gray-500"
+                  onClick={() => {
+                    const today = new Date();
+                    const weekAgo = subDays(today, 7);
+                    setDateRange({
+                      startDate: startOfDay(weekAgo),
+                      endDate: endOfDay(today)
+                    });
+                  }}
+                >
                   <Calendar className="h-4 w-4 mr-2" />
-                  Select dates
+                  Last 7 days
                 </Button>
-                <Button variant="ghost" size="sm" className="text-gray-500">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-gray-500"
+                  onClick={() => window.location.href = '/transactions'}
+                >
                   <Filter className="h-4 w-4 mr-2" />
-                  Apply filter
+                  View all
                 </Button>
               </div>
             </div>
@@ -306,6 +385,12 @@ const Index = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Create Transaction Modal */}
+        <CreateTransactionModal
+          isOpen={showCreateTransaction}
+          onClose={() => setShowCreateTransaction(false)}
+        />
       </div>
     </Layout>
   );

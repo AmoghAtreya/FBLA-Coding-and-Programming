@@ -41,7 +41,7 @@ import {
 } from '@/components/ui/sheet';
 
 const Accounts = () => {
-  const { accounts, isLoading, addNewAccount, deleteAccount, updateAccount } = useAccounts();
+  const { accounts, isLoading, addNewAccount, deleteAccount } = useAccounts();
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
   const [accountToDelete, setAccountToDelete] = useState<string | null>(null);
   const { toast } = useToast();
@@ -63,20 +63,26 @@ const Accounts = () => {
 
   const totalBalance = accounts.reduce((sum, account) => sum + account.balance, 0);
 
-  const handleAddAccount = async () => {
-    if (!newAccountName.trim()) return;
+  const handleAddAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAccount.name.trim()) return;
     
     try {
-      const balance = parseFloat(newAccountBalance) || 0;
       await addNewAccount({
-        name: newAccountName.trim(),
-        type: newAccountType,
-        balance: balance
+        name: newAccount.name.trim(),
+        type: newAccount.type,
+        balance: newAccount.balance,
+        icon: newAccount.icon,
+        color: newAccount.color
       });
       
-      setNewAccountName('');
-      setNewAccountType('checking');
-      setNewAccountBalance('');
+      setNewAccount({
+        name: '',
+        type: '',
+        balance: 0,
+        icon: 'Wallet',
+        color: '#3b82f6'
+      });
       setIsAddSheetOpen(false);
     } catch (error) {
       console.error('Error creating account:', error);
@@ -102,31 +108,14 @@ const Accounts = () => {
 
   const handleEditAccount = (account: any) => {
     setSelectedAccount(account);
-    setNewAccountName(account.name);
-    setNewAccountType(account.type || 'checking');
-    setNewAccountBalance(account.balance.toString());
+    setNewAccount({
+      name: account.name,
+      type: account.type || 'checking',
+      balance: account.balance,
+      icon: account.icon,
+      color: account.color
+    });
     setIsAddSheetOpen(true);
-  };
-
-  const handleUpdateAccount = async () => {
-    if (!selectedAccount || !newAccountName.trim()) return;
-    
-    try {
-      const balance = parseFloat(newAccountBalance) || 0;
-      await updateAccount(selectedAccount.id, {
-        name: newAccountName.trim(),
-        type: newAccountType,
-        balance: balance
-      });
-      
-      setNewAccountName('');
-      setNewAccountType('checking');
-      setNewAccountBalance('');
-      setIsAddSheetOpen(false);
-      setSelectedAccount(null);
-    } catch (error) {
-      console.error('Error updating account:', error);
-    }
   };
 
   const getAccountIcon = (iconName: string) => {

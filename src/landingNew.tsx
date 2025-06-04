@@ -394,7 +394,7 @@ const LandingNew = () => {
         </div>
 
         {/* Partner Logos */}
-        <motion.div 
+        {/* <motion.div 
           className="absolute bottom-20 left-0 right-0 z-10"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -415,7 +415,7 @@ const LandingNew = () => {
               ))}
             </div>
           </div>
-        </motion.div>
+        </motion.div> */}
       </section>
 
       {/* Features Section with phone and floating rectangles */}

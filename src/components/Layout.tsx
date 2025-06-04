@@ -2,9 +2,9 @@
  * Layout Component
  * 
  * Professional financial application layout with:
- * - Collapsible left sidebar navigation
+ * - Fixed collapsible left sidebar navigation
  * - Full-width content area
- * - Collapsible right sidebar with card and quick transaction
+ * - Fixed collapsible right sidebar with card and quick transaction
  * - Sleek metallic grey/black design with green accents
  */
 
@@ -34,8 +34,20 @@ import {
   Send,
   DollarSign,
   Menu,
-  X
+  X,
+  User,
+  HelpCircle,
+  Moon,
+  Sun
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -50,6 +62,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isLeftSidebarCollapsed, setIsLeftSidebarCollapsed] = useState(false);
   const [isRightSidebarCollapsed, setIsRightSidebarCollapsed] = useState(false);
   const [isCardSectionCollapsed, setIsCardSectionCollapsed] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // Calculate actual transaction count for notification
   const recentTransactionsCount = transactions.filter(t => {
@@ -111,15 +124,21 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     }
   };
 
+  const handleSidebarLogout = () => {
+    if (window.confirm('Are you sure you want to sign out?')) {
+      handleSignOut();
+    }
+  };
+
   const handleNavigation = (path: string) => {
     navigate(path);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-100 flex">
-      {/* Left Sidebar */}
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-100 flex overflow-hidden">
+      {/* Left Sidebar - Fixed Height */}
       <motion.div 
-        className="bg-gray-900 border-r border-gray-800 flex flex-col relative"
+        className="bg-gray-900 border-r border-gray-800 flex flex-col relative h-screen overflow-hidden"
         animate={{ width: isLeftSidebarCollapsed ? 80 : 256 }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
       >
@@ -132,7 +151,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </button>
 
         {/* Logo */}
-        <div className="p-6 border-b border-gray-800">
+        <div className="p-6 border-b border-gray-800 flex-shrink-0">
           <Link to="/" className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
               <span className="text-gray-900 font-bold text-lg">A</span>
@@ -153,8 +172,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </Link>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-2">
+        {/* Navigation - Scrollable if needed */}
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           {navigationItems.map((item) => (
             <div key={item.name}>
               <button
@@ -224,8 +243,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           ))}
         </nav>
 
-        {/* Account Section */}
-        <div className="p-4 border-t border-gray-800">
+        {/* Account Section - Fixed at bottom */}
+        <div className="p-4 border-t border-gray-800 flex-shrink-0">
           <AnimatePresence>
             {!isLeftSidebarCollapsed && (
               <motion.div 
@@ -266,7 +285,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           ))}
           
           <button
-            onClick={handleSignOut}
+            onClick={() => {
+              if (window.confirm('Are you sure you want to sign out?')) {
+                handleSignOut();
+              }
+            }}
             className="w-full flex items-center space-x-3 p-3 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-800 transition-all duration-200 mt-2"
           >
             <LogOut className="h-5 w-5" />
@@ -287,11 +310,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       </motion.div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex">
+      <div className="flex-1 flex h-screen overflow-hidden">
         {/* Center Content */}
         <div className="flex-1 flex flex-col">
-          {/* Top Header */}
-          <header className="bg-white border-b border-gray-200 px-6 py-4">
+          {/* Top Header - Fixed */}
+          <header className="bg-white border-b border-gray-200 px-6 py-4 flex-shrink-0">
             <div className="flex items-center justify-between">
               {/* Search */}
               <div className="flex-1 max-w-lg">
@@ -312,35 +335,69 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
                 </Button>
                 
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-gradient-to-r from-green-400 to-green-600 rounded-full flex items-center justify-center">
-                    <span className="text-white font-medium text-sm">
-                      {user?.email?.charAt(0)?.toUpperCase() || 'A'}
-                    </span>
-                  </div>
-                  <div className="hidden md:block">
-                    <div className="text-sm font-medium text-gray-900">
-                      {user?.email?.split('@')[0] || 'Aksara Pratama M'}
-                    </div>
-                    <div className="text-xs text-gray-500">Premium User</div>
-                  </div>
-                  <ChevronDown className="h-4 w-4 text-gray-400" />
-                </div>
+                {/* User Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-lg">
+                      <div className="w-8 h-8 bg-gradient-to-r from-green-400 to-green-600 rounded-full flex items-center justify-center">
+                        <span className="text-white font-medium text-sm">
+                          {user?.email?.charAt(0)?.toUpperCase() || 'A'}
+                        </span>
+                      </div>
+                      <div className="hidden md:block text-left">
+                        <div className="text-sm font-medium text-gray-900">
+                          {user?.email?.split('@')[0] || 'Aksara Pratama M'}
+                        </div>
+                        <div className="text-xs text-gray-500">Premium User</div>
+                      </div>
+                      <ChevronDown className="h-4 w-4 text-gray-400" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => navigate('/settings')}>
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Profile</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/settings')}>
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>Settings</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <HelpCircle className="mr-2 h-4 w-4" />
+                      <span>Help & Support</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem>
+                      <Moon className="mr-2 h-4 w-4" />
+                      <span>Dark Mode</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      onClick={handleSidebarLogout}
+                      className="text-red-600 focus:text-red-600"
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Sign Out</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           </header>
 
-          {/* Main Content */}
-          <main className="flex-1 p-6 bg-gray-50">
+          {/* Main Content - Scrollable */}
+          <main className="flex-1 overflow-y-auto bg-gray-50 p-6">
             {children}
           </main>
         </div>
 
-        {/* Right Sidebar */}
+        {/* Right Sidebar - Fixed Height */}
         <AnimatePresence>
           {!isRightSidebarCollapsed && (
             <motion.div 
-              className="w-96 bg-white border-l border-gray-200 flex flex-col"
+              className="w-96 bg-white border-l border-gray-200 flex flex-col h-screen"
               initial={{ width: 0, opacity: 0 }}
               animate={{ width: 384, opacity: 1 }}
               exit={{ width: 0, opacity: 0 }}
@@ -354,7 +411,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <ChevronRight className="h-3 w-3" />
               </button>
 
-              <div className="p-6 space-y-6 flex-1 overflow-y-auto">
+              {/* Right Sidebar Content - Independently Scrollable */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
                 {/* My Card Section */}
                 <Card className="border-0 shadow-sm">
                   <CardHeader className="pb-4">
