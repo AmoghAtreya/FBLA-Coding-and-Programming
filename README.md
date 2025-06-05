@@ -1,73 +1,91 @@
-# Welcome to your Lovable project
+# Capitex
 
-## Project info
+## Overview
+Capitex is a web application developed for the FBLA Coding and Programming event. Built using **React**, **Supabase**, and **TSX**, Capitex provides a secure and user-friendly platform for managing digital transactions and financial interactions. This project showcases modern web development practices, including responsive design, secure backend integration, and a seamless user experience.
 
-**URL**: https://lovable.dev/projects/40b8bc56-c536-4891-a9cf-c752dc1a2cb2
+## Features
+- **User Authentication**: Secure sign-up, login, and logout functionality powered by Supabase Auth.
+- **Transaction Management**: Create, view, and manage transactions with real-time updates.
+- **User Dashboard**: Personalized dashboard for tracking account activity and balances.
+- **Responsive Design**: Optimized for both desktop and mobile devices using Tailwind CSS.
+- **Type-Safe Development**: Built with TypeScript for enhanced code reliability and maintainability.
 
-## How can I edit this code?
+## Tech Stack
+- **Frontend**: React, TSX, Tailwind CSS
+- **Backend**: Supabase (Authentication, Database, Realtime)
+- **Language**: TypeScript
+- **Hosting**: Deployed via [Vercel/Netlify/Other Platform] (replace with actual hosting platform)
 
-There are several ways of editing your application.
+## Installation
+To run Capitex locally, follow these steps:
 
-**Use Lovable**
+1. **Clone the Repository**:
+   ```bash
+   git clone https://github.com/your-username/projectname
+   cd capitex
+   ```
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/40b8bc56-c536-4891-a9cf-c752dc1a2cb2) and start prompting.
+2. **Install Dependencies**:
+   ```bash
+   npm install
+   ```
 
-Changes made via Lovable will be committed automatically to this repo.
+3. **Set Up Environment Variables**:
+   Create a `.env` file in the root directory and add the following:
+   ```
+   VITE_SUPABASE_URL=your-supabase-project-url
+   VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+   ```
+   Replace `your-supabase-project-url` and `your-supabase-anon-key` with your Supabase project credentials.
 
-**Use your preferred IDE**
+4. **Run the Development Server**:
+   ```bash
+   npm run dev
+   ```
+   The app will be available at `http://localhost:5173`.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Usage
+- **Sign Up/Login**: Create an account or log in using the authentication interface.
+- **Dashboard**: View your account balance and recent transactions.
+- **Send/Receive Funds**: Use the transaction form to send or request funds securely.
+- **Profile Management**: Update user information and manage account settings.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+## Project Structure
+```
+capitex/
+├── public/                 # Static assets
+├── src/
+│   ├── components/         # Reusable React components
+│   ├── pages/              # Page components (e.g., Home, Dashboard, Transactions)
+│   ├── supabase/           # Supabase client configuration and queries
+│   ├── styles/             # Tailwind CSS and custom styles
+│   ├── types/              # TypeScript type definitions
+│   ├── App.tsx             # Main app component
+│   ├── main.tsx            # Entry point
+├── .env                    # Environment variables
+├── package.json            # Project dependencies and scripts
+├── README.md               # This file
 ```
 
-**Edit a file directly in GitHub**
+## Supabase Setup
+1. Create a Supabase project at [supabase.com](https://supabase.com).
+2. Set up the following tables in your Supabase database:
+   - `users`: Stores user information (id, email, etc.).
+   - `transactions`: Stores transaction details (sender_id, receiver_id, amount, timestamp).
+3. Enable Realtime for the `transactions` table to support live updates.
+4. Configure Supabase Authentication with email/password and/or OAuth providers.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Contributing
+This project was developed for the FBLA Coding and Programming event. Contributions are welcome for educational purposes! To contribute:
+1. Fork the repository.
+2. Create a feature branch (`git checkout -b feature-name`).
+3. Commit your changes (`git commit -m 'Add feature'`).
+4. Push to the branch (`git push origin feature-name`).
+5. Open a pull request.
 
-**Use GitHub Codespaces**
+## License
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/40b8bc56-c536-4891-a9cf-c752dc1a2cb2) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## Acknowledgments
+- Built for the FBLA Coding and Programming event.
+- Thanks to the React, Supabase, and Tailwind CSS communities for their excellent documentation and tools.
