@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Globe, Menu, X } from 'lucide-react';
+import { ChevronDown, Globe, Menu, X, Shield, BarChart2, Smartphone, Zap, Check, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import CircularGallery from '@/components/CircularGallery';
 
 
 const LandingNew = () => {
@@ -21,6 +28,13 @@ const LandingNew = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const scrollToSection = (id: string) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   // Animation variants
   const fadeInUp = {
@@ -103,23 +117,25 @@ const LandingNew = () => {
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-8">
+              <motion.a 
+                onClick={() => scrollToSection('features')} 
+                className="text-gray-300 hover:text-white transition-colors duration-200 text-sm cursor-pointer"
+                whileHover={{ scale: 1.05 }}
+              >
+                Features
+              </motion.a>
+              <motion.a 
+                onClick={() => scrollToSection('faq')} 
+                className="text-gray-300 hover:text-white transition-colors duration-200 text-sm cursor-pointer"
+                whileHover={{ scale: 1.05 }}
+              >
+                FAQ
+              </motion.a>
               <Link
                 to="/dashboard"
                 className="text-gray-300 hover:text-white transition-colors duration-200 text-sm"
               >
                 Dashboard
-              </Link>
-              <Link
-                to="/faq"
-                className="text-gray-300 hover:text-white transition-colors duration-200 text-sm"
-              >
-                Help Center
-              </Link>
-              <Link
-                to="/settings"
-                className="text-gray-300 hover:text-white transition-colors duration-200 text-sm"
-              >
-                Settings
               </Link>
               <Link
                 to="/landing"
@@ -184,14 +200,14 @@ const LandingNew = () => {
                 transition={{ duration: 0.3 }}
               >
                 <div className="flex flex-col space-y-4">
+                  <a onClick={() => scrollToSection('features')} className="text-gray-300 hover:text-white transition-colors text-sm cursor-pointer">
+                    Features
+                  </a>
+                  <a onClick={() => scrollToSection('faq')} className="text-gray-300 hover:text-white transition-colors text-sm cursor-pointer">
+                    FAQ
+                  </a>
                   <Link to="/dashboard" className="text-gray-300 hover:text-white transition-colors text-sm">
                     Dashboard
-                  </Link>
-                  <Link to="/faq" className="text-gray-300 hover:text-white transition-colors text-sm">
-                    Help Center
-                  </Link>
-                  <Link to="/settings" className="text-gray-300 hover:text-white transition-colors text-sm">
-                    Settings
                   </Link>
                   <Link to="/landing" className="text-gray-300 hover:text-white transition-colors text-sm">
                     Original Landing
@@ -553,8 +569,8 @@ const LandingNew = () => {
         </div>
       </section>
 
-      {/* Benefits Section */}
-      <section className="py-20 bg-gradient-to-br from-gray-800 via-gray-900 to-black relative">
+      {/* Interactive Features Gallery */}
+      <section id="features" className="py-20 bg-gradient-to-br from-gray-800 via-gray-900 to-black relative">
         {/* Background Pattern */}
         <div 
           className="absolute inset-0 opacity-10"
@@ -565,60 +581,151 @@ const LandingNew = () => {
         />
         
         <div className="max-w-7xl mx-auto px-6 relative z-10">
-          <motion.div
+          <motion.div 
             className="text-center mb-16"
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
+            viewport={{ once: true, margin: "-100px" }}
           >
-            <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6">
-              Why Do You<br />
-              <span className="text-green-400">Have To Choose</span><br />
-              <span className="text-green-400">And Use Ahlan?</span>
+            <h2 className="text-4xl md:text-5xl font-bold mb-6 text-white">
+              Everything You Need
             </h2>
+            <p className="text-xl text-gray-300 max-w-2xl mx-auto mb-8">
+              Powerful features designed specifically for modern financial management
+            </p>
+            <p className="text-sm text-gray-400">
+              Scroll or drag to explore our features
+            </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          {/* Interactive 3D Gallery */}
+          <motion.div 
+            className="relative"
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1, delay: 0.3 }}
+            viewport={{ once: true, margin: "-100px" }}
+          >
+            <div style={{ height: '600px', position: 'relative' }}>
+              <CircularGallery 
+                bend={0} 
+                textColor="#ffffff" 
+                borderRadius={0.05}
+                items={[
+                  { 
+                    image: "https://images.unsplash.com/photo-1563013544-824ae1b704d3?auto=format&fit=crop&w=800&q=80",
+                    text: "Bank-Level Security"
+                  },
+                  { 
+                    image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80",
+                    text: "Smart Analytics"
+                  },
+                  { 
+                    image: "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=800&q=80",
+                    text: "Mobile First Design"
+                  },
+                  { 
+                    image: "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=800&q=80",
+                    text: "Instant Transfers"
+                  },
+                  { 
+                    image: "https://images.unsplash.com/photo-1434626881859-194d67b2b86f?auto=format&fit=crop&w=800&q=80",
+                    text: "Global Payments"
+                  },
+                  { 
+                    image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80",
+                    text: "24/7 Customer Support"
+                  },
+                  { 
+                    image: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=800&q=80",
+                    text: "Real-time Notifications"
+                  },
+                  { 
+                    image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80",
+                    text: "Advanced Budgeting"
+                  }
+                ]}
+              />
+            </div>
+          </motion.div>
+
+          {/* Feature Details */}
+          <motion.div 
+            className="mt-16 grid md:grid-cols-2 lg:grid-cols-4 gap-8"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.5 }}
+            viewport={{ once: true, margin: "-100px" }}
+          >
             {[
-              { 
-                title: "Secure transactions", 
-                description: "Bank-level security for all your transactions",
-                icon: "🔒"
+              {
+                icon: Shield,
+                title: 'Bank-Level Security',
+                description: 'Your money is protected with industry-leading encryption and security protocols.',
               },
-              { 
-                title: "Fast and easy transactions", 
-                description: "Complete transactions in seconds",
-                icon: "⚡"
+              {
+                icon: BarChart2,
+                title: 'Smart Analytics',
+                description: 'Get detailed insights into your spending patterns with AI-powered analytics.',
               },
-              { 
-                title: "Your assistance", 
-                description: "24/7 customer support available",
-                icon: "🎯"
+              {
+                icon: Smartphone,
+                title: 'Mobile First Design',
+                description: 'Manage your finances on-the-go with our intuitive mobile app.',
               },
-              { 
-                title: "Your satisfaction is our priority", 
-                description: "We put your needs first",
-                icon: "⭐"
+              {
+                icon: Zap,
+                title: 'Instant Transfers',
+                description: 'Send and receive money instantly with zero fees for verified users.',
+              },
+              {
+                icon: Globe,
+                title: 'Global Payments',
+                description: 'Send money anywhere in the world with competitive exchange rates.',
+              },
+              {
+                icon: Check,
+                title: '24/7 Customer Support',
+                description: 'Get help whenever you need it with our round-the-clock customer support.',
+              },
+              {
+                icon: ChevronDown,
+                title: 'Real-time Notifications',
+                description: 'Stay updated with instant alerts for all your transactions and account activities.',
+              },
+              {
+                icon: BarChart2,
+                title: 'Advanced Budgeting',
+                description: 'Create intelligent budgets that adapt to your spending patterns and help you save.',
               }
-            ].map((benefit, index) => (
+            ].map((feature, index) => (
               <motion.div
                 key={index}
-                className="text-center group"
-                initial={{ opacity: 0, y: 30 }}
+                className="group text-center"
+                initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                viewport={{ once: true }}
-                whileHover={{ scale: 1.02, y: -5 }}
+                transition={{ delay: index * 0.1, duration: 0.6 }}
+                viewport={{ once: true, margin: "-50px" }}
+                whileHover={{ scale: 1.05 }}
               >
-                <div className="w-16 h-16 bg-green-600 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl group-hover:bg-green-500 transition-colors">
-                  {benefit.icon}
-                </div>
-                <h3 className="text-white font-semibold mb-2">{benefit.title}</h3>
-                <p className="text-gray-400 text-sm leading-relaxed">{benefit.description}</p>
+                <motion.div 
+                  className="w-16 h-16 mb-4 rounded-2xl bg-gradient-to-r from-green-400 to-green-600 flex items-center justify-center shadow-lg mx-auto"
+                  whileHover={{ rotate: [0, -10, 10, 0], scale: 1.1 }}
+                  transition={{ duration: 0.4 }}
+                >
+                  <feature.icon className="h-8 w-8 text-white" />
+                </motion.div>
+                
+                <h3 className="text-lg font-bold text-white mb-2 group-hover:text-green-400 transition-colors">
+                  {feature.title}
+                </h3>
+                <p className="text-gray-300 text-sm leading-relaxed">
+                  {feature.description}
+                </p>
               </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -836,6 +943,105 @@ const LandingNew = () => {
                   <span>Download for Android</span>
                 </motion.button>
               </div>
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section id="faq" className="py-20 bg-white relative">
+        {/* Background Pattern */}
+        <div 
+          className="absolute inset-0 opacity-5"
+          style={{
+            backgroundImage: `radial-gradient(circle at 2px 2px, rgba(0,0,0,0.05) 1px, transparent 0)`,
+            backgroundSize: '50px 50px'
+          }}
+        />
+        
+        <div className="max-w-4xl mx-auto px-6 relative z-10">
+          <motion.div 
+            className="text-center mb-16"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true, margin: "-100px" }}
+          >
+            <h2 className="text-4xl md:text-5xl font-bold mb-6 text-gray-900">
+              Common Questions
+            </h2>
+            <p className="text-xl text-gray-600">
+              Everything you need to know about Ahlan
+            </p>
+          </motion.div>
+
+          <motion.div 
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+          >
+            <Accordion type="single" collapsible className="space-y-6">
+              {[
+                {
+                  question: "What is Ahlan?",
+                  answer: "Ahlan is a comprehensive financial management platform designed for modern users. It helps you manage payments, track transactions, and build healthy financial habits with advanced security features."
+                },
+                {
+                  question: "Is Ahlan free to use?",
+                  answer: "Yes, Ahlan's core features are completely free for regular users. We offer premium features for advanced users, but you can accomplish most financial management tasks with our free plan."
+                },
+                {
+                  question: "How secure is my financial data?",
+                  answer: "We use bank-level encryption and security measures to protect your data. Your information is never shared with third parties, and you maintain full control over your financial data. We implement industry-standard security protocols."
+                },
+                {
+                  question: "Can I connect my bank account?",
+                  answer: "Yes, Ahlan supports secure connections to thousands of financial institutions. We use industry-standard security protocols to ensure your banking information remains safe and encrypted."
+                },
+                {
+                  question: "Are there any transaction fees?",
+                  answer: "No, Ahlan prides itself on zero transaction fees for most operations. You won't be charged fees or taxes for standard transactions, making it cost-effective for your financial management."
+                },
+                {
+                  question: "How do I get started?",
+                  answer: "Getting started is simple! Just click the 'Get Started' button, create your account, and you'll be guided through our easy setup process. You can start managing your finances within minutes."
+                }
+              ].map((faq, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1, duration: 0.6 }}
+                  viewport={{ once: true }}
+                >
+                  <AccordionItem 
+                    value={`item-${index}`} 
+                    className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-2xl shadow-lg border border-gray-200 px-6 overflow-hidden group hover:shadow-xl hover:border-green-500/50 transition-all duration-300"
+                  >
+                    <AccordionTrigger className="text-left text-lg font-semibold py-6 text-gray-900 group-hover:text-green-600 transition-colors">
+                      {faq.question}
+                    </AccordionTrigger>
+                    <AccordionContent className="text-gray-700 pb-6 leading-relaxed">
+                      {faq.answer}
+                    </AccordionContent>
+                  </AccordionItem>
+                </motion.div>
+              ))}
+            </Accordion>
+
+            <motion.div 
+              className="mt-12 text-center"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6, duration: 0.6 }}
+              viewport={{ once: true }}
+            >
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <button className="bg-green-600 hover:bg-green-500 text-white px-8 py-4 rounded-2xl font-semibold text-lg transition-all shadow-xl hover:shadow-green-500/25">
+                  <Link to="/auth" className="text-white">Get Started Now →</Link>
+                </button>
+              </motion.div>
             </motion.div>
           </motion.div>
         </div>

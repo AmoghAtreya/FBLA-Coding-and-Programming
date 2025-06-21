@@ -7,9 +7,10 @@
  * - Balance tracking with modern cards
  * - Professional color scheme
  * - Account creation and management
+ * - Stripe credit card integration
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAccounts } from '@/context/AccountContext';
 import Layout from '@/components/Layout';
@@ -39,12 +40,23 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import { AddCreditCardModal } from '@/components/AddCreditCardModal';
+import { PaymentModal } from '@/components/PaymentModal';
+import { fetchStripeAccounts, type StripeAccount } from '@/services/stripeService';
 
 const Accounts = () => {
   const { accounts, isLoading, addNewAccount, deleteAccount } = useAccounts();
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
   const [accountToDelete, setAccountToDelete] = useState<string | null>(null);
   const { toast } = useToast();
+  
+  // Stripe-related state
+  const [stripeAccounts, setStripeAccounts] = useState<StripeAccount[]>([]);
+  const [isLoadingStripe, setIsLoadingStripe] = useState(true);
+  const [showAddCreditCard, setShowAddCreditCard] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState(100);
+  const [customerId, setCustomerId] = useState<string>('');
   
   const [newAccount, setNewAccount] = useState({
     name: '',
@@ -62,6 +74,58 @@ const Accounts = () => {
   const [newAccountBalance, setNewAccountBalance] = useState('');
 
   const totalBalance = accounts.reduce((sum, account) => sum + account.balance, 0);
+
+  // Load Stripe accounts on component mount
+  useEffect(() => {
+    const loadStripeAccounts = async () => {
+      try {
+        setIsLoadingStripe(true);
+        const { accounts, customerId } = await fetchStripeAccounts();
+        setStripeAccounts(accounts);
+        if (customerId) {
+          setCustomerId(customerId);
+        }
+      } catch (error) {
+        console.error('Error loading Stripe accounts:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load credit card information",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoadingStripe(false);
+      }
+    };
+
+    loadStripeAccounts();
+  }, []);
+
+  // Handler for successful credit card addition
+  const handleCreditCardAdded = async () => {
+    toast({
+      title: "Success",
+      description: "Credit card added successfully!",
+    });
+    // Reload Stripe accounts
+    try {
+      const { accounts, customerId } = await fetchStripeAccounts();
+      setStripeAccounts(accounts);
+      if (customerId) {
+        setCustomerId(customerId);
+      }
+    } catch (error) {
+      console.error('Error reloading Stripe accounts:', error);
+    }
+  };
+
+  // Handler for successful payment
+  const handlePaymentSuccess = (paymentIntent: any) => {
+    toast({
+      title: "Payment Successful",
+      description: `Payment of $${paymentAmount.toFixed(2)} processed successfully!`,
+    });
+    // You might want to add the payment as a transaction here
+  };
 
   const handleAddAccount = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -361,7 +425,119 @@ const Accounts = () => {
           </Card>
         </div>
 
-        {/* Accounts Grid */}
+        {/* Stripe Credit Cards Section */}
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Credit Cards</h2>
+              <p className="text-gray-500 text-sm">Manage your credit cards with Stripe</p>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                onClick={() => setShowAddCreditCard(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Credit Card
+              </Button>
+              <div className="flex items-center space-x-2">
+                <Input
+                  type="number"
+                  placeholder="Amount"
+                  value={paymentAmount}
+                  onChange={(e) => setPaymentAmount(parseFloat(e.target.value) || 0)}
+                  className="w-24"
+                  min="1"
+                  step="0.01"
+                />
+                <Button
+                  onClick={() => setShowPaymentModal(true)}
+                  variant="outline"
+                  className="border-green-600 text-green-600 hover:bg-green-50"
+                  disabled={!paymentAmount || paymentAmount <= 0}
+                >
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Pay ${paymentAmount.toFixed(2)}
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {isLoadingStripe ? (
+            <div className="flex justify-center items-center h-32">
+              <div className="h-8 w-8 rounded-full border-4 border-t-blue-500 border-gray-300 animate-spin"></div>
+            </div>
+          ) : stripeAccounts.length === 0 ? (
+            <Card className="bg-white border-0 shadow-sm">
+              <CardContent className="p-12 text-center">
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CreditCard className="h-8 w-8 text-blue-500" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No credit cards added</h3>
+                <p className="text-gray-500 mb-4">Add a credit card to start making secure payments with Stripe.</p>
+                <Button 
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  onClick={() => setShowAddCreditCard(true)}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Your First Credit Card
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {stripeAccounts.map((card) => (
+                <motion.div
+                  key={card.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-200">
+                    <CardContent className="p-6">
+                      <div className="flex justify-between items-start mb-6">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                            <CreditCard className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <p className="text-sm opacity-90">Credit Card</p>
+                            <p className="text-xs opacity-70">Stripe Powered</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="flex items-center space-x-1">
+                            <div className="w-6 h-6 bg-orange-500 rounded-full opacity-90"></div>
+                            <div className="w-6 h-6 bg-red-500 rounded-full opacity-90 -ml-2"></div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <div>
+                          <p className="text-lg font-mono tracking-widest">{card.accountNumber}</p>
+                        </div>
+                        
+                        <div className="flex justify-between items-end">
+                          <div>
+                            <p className="text-xs opacity-70 mb-1">EXPIRES</p>
+                            <p className="text-sm font-mono">{card.expiryDate || 'MM/YY'}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs opacity-70 mb-1">CARD TYPE</p>
+                            <p className="text-sm font-semibold">{card.name}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Regular Accounts Grid */}
         {accounts.length === 0 ? (
           <Card className="bg-white border-0 shadow-sm">
             <CardContent className="p-12 text-center">
@@ -489,6 +665,22 @@ const Accounts = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Stripe Modals */}
+        <AddCreditCardModal
+          isOpen={showAddCreditCard}
+          onClose={() => setShowAddCreditCard(false)}
+          onSuccess={handleCreditCardAdded}
+          customerId={customerId}
+        />
+
+        <PaymentModal
+          isOpen={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          onSuccess={handlePaymentSuccess}
+          amount={paymentAmount}
+          description="Test payment"
+        />
       </div>
     </Layout>
   );

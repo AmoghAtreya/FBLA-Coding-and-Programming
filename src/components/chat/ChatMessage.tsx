@@ -26,7 +26,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
         className={cn(
           "max-w-xs rounded-lg px-4 py-2 text-sm",
           message.sender === 'user'
-            ? "bg-finflow-blue text-white"
+            ? "bg-finflow-green text-white"
             : "bg-white text-gray-800 border"
         )}
       >

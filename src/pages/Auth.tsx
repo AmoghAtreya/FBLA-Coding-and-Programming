@@ -203,11 +203,11 @@ const Auth = () => {
             <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
               <span className="text-black font-bold text-lg">A</span>
             </div>
-            <Link to="/landing">Ahlan.</Link>
+            <Link to="/landing-new">Ahlan.</Link>
           </motion.div>
           
           <Link 
-            to="/landing"
+            to="/landing-new"
             className="text-gray-300 hover:text-white transition-colors"
           >
             Back to Home

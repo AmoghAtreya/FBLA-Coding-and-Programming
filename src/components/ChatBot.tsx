@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -42,28 +41,32 @@ const ChatBot: React.FC = () => {
       <Button
         className={cn(
           "fixed bottom-6 right-6 rounded-full p-4 shadow-lg transition-all duration-300 z-50 chat-toggle h-14 w-14 md:h-16 md:w-16",
-          isOpen ? "bg-red-500 hover:bg-red-600" : "bg-finflow-blue hover:bg-blue-700"
+          isOpen
+            ? "bg-red-500 hover:bg-red-600"
+            : "bg-green-600 hover:bg-green-700"
         )}
         onClick={toggleChat}
       >
-        {isOpen ? 
-          <X className="h-6 w-6 md:h-7 md:w-7" /> : 
+        {isOpen ? (
+          <X className="h-6 w-6 md:h-7 md:w-7" />
+        ) : (
           <MessageCircle className="h-6 w-6 md:h-7 md:w-7" />
-        }
+        )}
       </Button>
       
       <Card
         className={cn(
-          "fixed bottom-24 md:bottom-28 right-6 w-80 md:w-96 shadow-xl rounded-xl overflow-hidden transition-all duration-300 transform z-40 chat-window",
-          isOpen ? "scale-100 opacity-100" : "scale-90 opacity-0 pointer-events-none"
+          "fixed bottom-24 md:bottom-28 right-6 w-80 md:w-96 shadow-2xl rounded-xl overflow-hidden transition-all duration-300 transform z-40 chat-window border-0",
+          isOpen ? "scale-100 opacity-100" : "scale-90 opacity-0 pointer-events-none",
+          "bg-gradient-to-br from-gray-900 via-gray-800 to-black"
         )}
       >
-        <div className="bg-finflow-blue text-white p-3">
-          <h3 className="font-medium text-sm">FinFlow Assistant</h3>
+        <div className="bg-green-600 text-white p-4 border-b border-gray-800">
+          <h3 className="font-semibold text-base">Ahlan Assistant</h3>
           <p className="text-xs text-white/80">Always here to help</p>
         </div>
         
-        <div className="h-96 overflow-y-auto p-4 bg-gray-50">
+        <div className="h-96 overflow-y-auto p-4 bg-gray-900">
           <div className="space-y-4">
             {messages.map(message => (
               <ChatMessage key={message.id} message={message} />
@@ -72,12 +75,12 @@ const ChatBot: React.FC = () => {
             {isTyping && (
               <div className="flex">
                 <Avatar className="h-8 w-8 mr-2">
-                  <AvatarFallback>F</AvatarFallback>
+                  <AvatarFallback className="bg-green-600 text-white">A</AvatarFallback>
                 </Avatar>
-                <div className="bg-white text-gray-800 border rounded-lg px-4 py-2 flex items-center space-x-1">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                <div className="bg-gray-800 text-gray-100 border border-gray-700 rounded-lg px-4 py-2 flex items-center space-x-1">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                 </div>
               </div>
             )}
@@ -86,19 +89,19 @@ const ChatBot: React.FC = () => {
           </div>
         </div>
         
-        <div className="p-3 bg-white border-t flex chat-input">
+        <div className="p-3 bg-gray-900 border-t border-gray-800 flex chat-input">
           <Input
             placeholder="Type your message..."
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
-            className="flex-1 mr-2"
+            className="flex-1 mr-2 bg-gray-800 text-white border border-gray-700 placeholder-gray-400 focus:ring-green-500"
           />
-          <Button 
-            onClick={handleSendMessage} 
+          <Button
+            onClick={handleSendMessage}
             disabled={!inputValue.trim() || isTyping}
             size="icon"
-            className="bg-finflow-blue hover:bg-blue-700 chat-send-button"
+            className="bg-green-600 hover:from-green-600 hover:to-green-800 text-white chat-send-button"
           >
             {isTyping ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </Button>

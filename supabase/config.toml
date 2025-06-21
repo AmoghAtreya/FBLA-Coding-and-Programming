@@ -38,3 +38,5 @@ enabled = false
 verify_jwt = true
 [functions.add-payment-method]
 verify_jwt = true
+[functions.create-payment-intent]
+verify_jwt = true

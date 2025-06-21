@@ -36,11 +36,8 @@ serve(async (req) => {
       });
     }
 
-    // Initialize Stripe with the secret key from environment variables
-    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!stripeKey) {
-      throw new Error("STRIPE_SECRET_KEY is not configured");
-    }
+    // Initialize Stripe with the provided secret key
+    const stripeKey = "sk_test_51RcYjZRvRJBYs5hvdyGNfhYWuaNFKfA5bTA2m2WSOIv3uHpuAKmkj3bhm7uDM3qNIqudFsHwaAxCTCCXXBPjKZYz00mQPLFVFk";
     
     const stripe = new Stripe(stripeKey, {
       apiVersion: "2023-10-16",
