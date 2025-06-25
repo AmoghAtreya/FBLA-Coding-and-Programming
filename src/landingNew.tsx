@@ -9,7 +9,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import CircularGallery from '@/components/CircularGallery';
+import AppleCardsCarouselDemo from '@/components/apple-cards-carousel-demo';
 
 
 const LandingNew = () => {
@@ -64,19 +64,27 @@ const LandingNew = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-800 via-gray-900 to-black text-white overflow-hidden relative">
+    <div className="min-h-screen text-white overflow-hidden relative" style={{ backgroundColor: '#181818' }}>
+      {/* Top Left Light Effect */}
+      <div 
+        className="fixed inset-0 pointer-events-none z-0"
+        style={{
+          background: `radial-gradient(circle at 10% 10%, rgba(57, 57, 57, 0.4) 0%, transparent 45%)`
+        }}
+      />
+      
       {/* Geometric Background Pattern */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         {/* Large geometric shapes */}
-        <div className="absolute top-20 right-20 w-96 h-96 border border-gray-700/30 rotate-45 rounded-3xl"></div>
-        <div className="absolute bottom-40 left-10 w-64 h-64 border border-gray-600/20 rotate-12 rounded-2xl"></div>
-        <div className="absolute top-1/2 left-1/3 w-32 h-32 bg-gradient-to-r from-gray-700/10 to-gray-800/10 rotate-45 rounded-lg"></div>
+        <div className="absolute top-20 right-20 w-96 h-96 border border-gray-700/20 rotate-45 rounded-3xl"></div>
+        <div className="absolute bottom-40 left-10 w-64 h-64 border border-gray-600/15 rotate-12 rounded-2xl"></div>
+        <div className="absolute top-1/2 left-1/3 w-32 h-32 bg-gradient-to-r from-gray-700/5 to-gray-800/5 rotate-45 rounded-lg"></div>
         
         {/* Dot pattern */}
         <div 
-          className="absolute inset-0 opacity-20"
+          className="absolute inset-0 opacity-10"
           style={{
-            backgroundImage: `radial-gradient(circle at 2px 2px, rgba(255,255,255,0.1) 1px, transparent 0)`,
+            backgroundImage: `radial-gradient(circle at 2px 2px, rgba(255,255,255,0.05) 1px, transparent 90)`,
             backgroundSize: '40px 40px'
           }}
         />
@@ -85,7 +93,7 @@ const LandingNew = () => {
         <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
-              <path d="M 60 0 L 0 0 0 60" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="1"/>
+              <path d="M 60 0 L 0 0 0 60" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="1"/>
             </pattern>
           </defs>
           <rect width="100%" height="100%" fill="url(#grid)" />
@@ -94,81 +102,114 @@ const LandingNew = () => {
       
       {/* Navigation Header */}
       <motion.nav 
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          isScrolled ? 'bg-black/95 backdrop-blur-lg' : 'bg-transparent'
-        }`}
+        className="fixed top-0 left-0 right-0 z-50"
+        style={{ 
+          background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #1f1f1f 100%)',
+          backgroundColor: '#1a1a1a'
+        }}
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.8 }}
       >
-        <div className="max-w-7xl mx-auto px-6 py-4">
+        <div className="max-w-7xl mx-auto px-6 py-3">
           <div className="flex items-center justify-between">
-            {/* Logo */}
-            <motion.div 
-              className="text-2xl font-bold text-white flex items-center space-x-2"
-              whileHover={{ scale: 1.02 }}
-              transition={{ type: "spring", stiffness: 400 }}
-            >
-              <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-                <span className="text-black font-bold text-lg">A</span>
-              </div>
-              <span>Ahlan.</span>
-            </motion.div>
+            {/* Logo and Navigation Combined */}
+            <div className="flex items-center space-x-8">
+              {/* Logo */}
+              <motion.div 
+                className="text-xl font-bold flex items-center space-x-2 text-white"
+                whileHover={{ scale: 1.02 }}
+                transition={{ type: "spring", stiffness: 400 }}
+              >
+                <div className="w-7 h-7 bg-white rounded flex items-center justify-center">
+                  <span className="text-black font-bold text-sm">A</span>
+                </div>
+                <span>Ahlan.</span>
+              </motion.div>
 
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-8">
-              <motion.a 
-                onClick={() => scrollToSection('features')} 
-                className="text-gray-300 hover:text-white transition-colors duration-200 text-sm cursor-pointer"
-                whileHover={{ scale: 1.05 }}
-              >
-                Features
-              </motion.a>
-              <motion.a 
-                onClick={() => scrollToSection('faq')} 
-                className="text-gray-300 hover:text-white transition-colors duration-200 text-sm cursor-pointer"
-                whileHover={{ scale: 1.05 }}
-              >
-                FAQ
-              </motion.a>
-              <Link
-                to="/dashboard"
-                className="text-gray-300 hover:text-white transition-colors duration-200 text-sm"
-              >
-                Dashboard
-              </Link>
-              <Link
-                to="/landing"
-                className="text-gray-300 hover:text-white transition-colors duration-200 text-sm"
-              >
-                Original Landing
-              </Link>
+              {/* Desktop Navigation */}
+              <div className="hidden md:flex items-center space-x-6">
+                <motion.a 
+                  onClick={() => scrollToSection('features')} 
+                  className="text-base cursor-pointer font-medium transition-colors duration-200"
+                  style={{
+                    background: 'linear-gradient(135deg, #e0e0e0 0%, #ffffff 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text'
+                  }}
+                  whileHover={{ scale: 1.05 }}
+                >
+                  Features
+                </motion.a>
+                <motion.a 
+                  onClick={() => scrollToSection('faq')} 
+                  className="text-base cursor-pointer font-medium transition-colors duration-200"
+                  style={{
+                    background: 'linear-gradient(135deg, #e0e0e0 0%, #ffffff 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text'
+                  }}
+                  whileHover={{ scale: 1.05 }}
+                >
+                  FAQ
+                </motion.a>
+                <Link
+                  to="/dashboard"
+                  className="text-base font-medium transition-colors duration-200"
+                  style={{
+                    background: 'linear-gradient(135deg, #e0e0e0 0%, #ffffff 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text'
+                  }}
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  to="/landing"
+                  className="text-base font-medium transition-colors duration-200"
+                  style={{
+                    background: 'linear-gradient(135deg, #e0e0e0 0%, #ffffff 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text'
+                  }}
+                >
+                  Original Landing
+                </Link>
+              </div>
             </div>
 
             {/* Right Side */}
-            <div className="hidden md:flex items-center space-x-4">
+            <div className="hidden md:flex items-center space-x-6">
               <motion.div 
-                className="flex items-center space-x-2 text-gray-300 text-sm"
+                className="flex items-center space-x-1 text-white text-sm"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.6 }}
               >
-                <Globe size={14} />
-                <span>EN</span>
-                <ChevronDown size={14} />
+                <Globe size={16} className="text-white" />
+                <span className="font-medium">EN</span>
               </motion.div>
               
               <motion.button 
-                className="text-gray-300 hover:text-white transition-colors text-sm"
+                className="text-white hover:text-gray-200 transition-colors text-sm font-medium"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.7 }}
               >
-                <Link to="/auth" className="text-gray-300 hover:text-white">log in</Link>
+                <Link 
+                  to="/auth" 
+                  className="text-white hover:text-gray-200"
+                >
+                  log in
+                </Link>
               </motion.button>
               
               <motion.button 
-                className="bg-green-600 hover:bg-green-500 px-4 py-2 rounded-md transition-colors text-sm font-medium"
+                className="bg-gray-600 hover:bg-gray-500 px-4 py-2 rounded text-sm font-medium text-white transition-colors"
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.8 }}
@@ -214,7 +255,7 @@ const LandingNew = () => {
                   </Link>
                   <div className="flex items-center space-x-4 pt-4 border-t border-gray-700">
                     <Link to="/auth" className="text-gray-300 hover:text-white text-sm">log in</Link>
-                    <Link to="/auth" className="bg-green-600 px-4 py-2 rounded-md text-sm text-white">Register</Link>
+                    <Link to="/auth" className="px-4 py-2 rounded-md text-sm text-white" style={{ backgroundColor: '#9fd1b5' }}>Register</Link>
                   </div>
                 </div>
               </motion.div>
@@ -229,9 +270,9 @@ const LandingNew = () => {
         <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1/2 h-full pointer-events-none">
           <div className="relative w-full h-full">
             {/* Large geometric shapes behind text */}
-            <div className="absolute top-20 left-20 w-80 h-80 border border-gray-600/20 rotate-12 rounded-3xl"></div>
-            <div className="absolute bottom-20 left-10 w-60 h-60 bg-gradient-to-br from-gray-700/10 to-gray-800/5 rotate-45 rounded-2xl"></div>
-            <div className="absolute top-40 left-40 w-40 h-40 border border-gray-500/15 rotate-45 rounded-xl"></div>
+            <div className="absolute top-20 left-20 w-80 h-80 border border-gray-600/15 rotate-12 rounded-3xl"></div>
+            <div className="absolute bottom-20 left-10 w-60 h-60 bg-gradient-to-br from-gray-700/5 to-gray-800/3 rotate-45 rounded-2xl"></div>
+            <div className="absolute top-40 left-40 w-40 h-40 border border-gray-500/10 rotate-45 rounded-xl"></div>
           </div>
         </div>
 
@@ -244,19 +285,26 @@ const LandingNew = () => {
             animate="animate"
           >
             <motion.h1 
-              className="text-5xl lg:text-6xl font-bold leading-tight"
+              className="text-7xl lg:text-7xl font-bold leading-tight text-left mb-8"
               variants={fadeInUp}
+              style={{
+                background: 'linear-gradient(135deg, #ffffff 0%,rgb(84, 84, 84) 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text'
+              }}
             >
               This Is A New Era<br />
-              <span className="text-green-400">Money Is Always</span><br />
-              In Your Mobile <span className="text-green-400">+</span>
+              Money Is Always<br />
+              In Your Mobile +
             </motion.h1>
             
             <motion.p 
-              className="text-lg text-gray-300 max-w-lg leading-relaxed"
+              className="text-lg text-left leading-relaxed mb-8 max-w-lg text-gray-300"
               variants={fadeInUp}
-            >
-              Now is not the time for you to be confused when making purchases online or making purchases abroad
+            ><br />
+              Now is not the time for you to be confused when making purchases online or making purchases abroad 
+              <br /> <br />
             </motion.p>
             
             <motion.div 
@@ -264,26 +312,40 @@ const LandingNew = () => {
               variants={fadeInUp}
             >
               <motion.button 
-                className="bg-green-600 hover:bg-green-500 px-8 py-3 rounded-md text-base font-medium transition-colors duration-300"
+                className="px-8 py-3 rounded-md text-base font-medium transition-colors duration-300"
+                style={{ backgroundColor: '#9fd1b5' }}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <Link to="/auth" className="text-white">Get Started</Link>
+                <Link to="/auth" className="text-black">Get Started</Link>
               </motion.button>
               
               <div className="flex items-center space-x-3">
                 <div className="flex -space-x-2">
-                  {[1, 2, 3, 4].map((i) => (
+                  {[
+                    "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
+                    "https://media.istockphoto.com/id/96333863/photo/retro-dude.jpg?s=612x612&w=0&k=20&c=L9_H1c8MP41PGEcg36VEakeMoVC8uf1Jq5hs-NErQ0k=&fit=crop&crop=face", 
+                    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
+                    "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face"
+                  ].map((imageUrl, i) => (
                     <motion.div
                       key={i}
-                      className="w-9 h-9 rounded-full bg-gradient-to-r from-green-400 to-blue-500 border-2 border-black"
+                      className="w-11 h-11 rounded-full border-2 border-black overflow-hidden"
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       transition={{ delay: 0.8 + i * 0.05 }}
-                    />
+                    >
+                      <img 
+                        src={imageUrl} 
+                        alt={`User ${i + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </motion.div>
                   ))}
                 </div>
-                <span className="text-gray-400 text-sm">Active Users</span>
+                <span className="text-sm text-white-300">
+                  Active Users
+                </span>
               </div>
             </motion.div>
           </motion.div>
@@ -303,7 +365,7 @@ const LandingNew = () => {
                 transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
               >
                 <div className="w-64 h-[520px] bg-gradient-to-b from-gray-700 to-gray-900 rounded-[2.5rem] p-2 shadow-2xl">
-                  <div className="w-full h-full bg-green-600 rounded-[2.2rem] p-6 flex flex-col relative overflow-hidden">
+                  <div className="w-full h-full rounded-[2.2rem] p-6 flex flex-col relative overflow-hidden" style={{ backgroundColor: '#9fd1b5' }}>
                     {/* Status bar */}
                     <div className="flex justify-between items-center text-white mb-8">
                       <span className="text-sm font-medium">9:41</span>
@@ -333,7 +395,13 @@ const LandingNew = () => {
                     <div className="bg-white/10 rounded-xl p-4 mb-6 backdrop-blur-sm">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-white/30 rounded-full"></div>
+                          <div className="w-8 h-8 rounded-full overflow-hidden">
+                            <img 
+                              src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face" 
+                              alt="Ahmed"
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
                           <div>
                             <p className="text-white text-sm font-medium">Ahmed</p>
                             <p className="text-white/70 text-xs">Michael Expatrio</p>
@@ -374,7 +442,7 @@ const LandingNew = () => {
                       <div className="text-2xl font-bold mb-2">$ 540.00</div>
                       <p className="text-xs text-gray-400 mb-4">Available Balance</p>
                       <div className="w-full h-1 bg-gray-700 rounded-full mb-2">
-                        <div className="w-3/4 h-1 bg-green-500 rounded-full"></div>
+                        <div className="w-3/4 h-1 rounded-full" style={{ backgroundColor: '#9fd1b5' }}></div>
                       </div>
                       <p className="text-xs text-gray-400">75% of goal reached</p>
                     </div>
@@ -408,31 +476,10 @@ const LandingNew = () => {
             </div>
           </motion.div>
         </div>
-
-        {/* Partner Logos */}
-        {/* <motion.div 
-          className="absolute bottom-20 left-0 right-0 z-10"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.5, duration: 0.8 }}
-        >
-          <div className="max-w-7xl mx-auto px-6">
-            <div className="flex justify-center space-x-12 items-center opacity-30">
-              {['Razorpay', 'Grammarly', 'Booking.com', 'Spotify'].map((brand, index) => (
-                <motion.div
-                  key={brand}
-                  className="text-gray-500 font-medium text-base"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 0.3 }}
-                  transition={{ delay: 1.7 + index * 0.1 }}
-                >
-                  {brand}
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </motion.div> */}
       </section>
+
+      {/* Divider Bar */}
+      <div className="w-full h-px" style={{ backgroundColor: '#262626' }}></div>
 
       {/* Features Section with phone and floating rectangles */}
       <section className="py-20 bg-white text-gray-900">
@@ -570,36 +617,18 @@ const LandingNew = () => {
       </section>
 
       {/* Interactive Features Gallery */}
-      <section id="features" className="py-20 bg-gradient-to-br from-gray-800 via-gray-900 to-black relative">
+      <section id="features" className="py-20 relative" style={{ backgroundColor: '#181818' }}>
         {/* Background Pattern */}
         <div 
-          className="absolute inset-0 opacity-10"
+          className="absolute inset-0 opacity-5"
           style={{
-            backgroundImage: `radial-gradient(circle at 2px 2px, rgba(255,255,255,0.1) 1px, transparent 0)`,
+            backgroundImage: `radial-gradient(circle at 2px 2px, rgba(255,255,255,0.05) 1px, transparent 0)`,
             backgroundSize: '40px 40px'
           }}
         />
         
         <div className="max-w-7xl mx-auto px-6 relative z-10">
-          <motion.div 
-            className="text-center mb-16"
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true, margin: "-100px" }}
-          >
-            <h2 className="text-4xl md:text-5xl font-bold mb-6 text-white">
-              Everything You Need
-            </h2>
-            <p className="text-xl text-gray-300 max-w-2xl mx-auto mb-8">
-              Powerful features designed specifically for modern financial management
-            </p>
-            <p className="text-sm text-gray-400">
-              Scroll or drag to explore our features
-            </p>
-          </motion.div>
-
-          {/* Interactive 3D Gallery */}
+          {/* Apple Cards Carousel */}
           <motion.div 
             className="relative"
             initial={{ opacity: 0, scale: 0.9 }}
@@ -607,47 +636,7 @@ const LandingNew = () => {
             transition={{ duration: 1, delay: 0.3 }}
             viewport={{ once: true, margin: "-100px" }}
           >
-            <div style={{ height: '600px', position: 'relative' }}>
-              <CircularGallery 
-                bend={0} 
-                textColor="#ffffff" 
-                borderRadius={0.05}
-                items={[
-                  { 
-                    image: "https://images.unsplash.com/photo-1563013544-824ae1b704d3?auto=format&fit=crop&w=800&q=80",
-                    text: "Bank-Level Security"
-                  },
-                  { 
-                    image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80",
-                    text: "Smart Analytics"
-                  },
-                  { 
-                    image: "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=800&q=80",
-                    text: "Mobile First Design"
-                  },
-                  { 
-                    image: "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=800&q=80",
-                    text: "Instant Transfers"
-                  },
-                  { 
-                    image: "https://images.unsplash.com/photo-1434626881859-194d67b2b86f?auto=format&fit=crop&w=800&q=80",
-                    text: "Global Payments"
-                  },
-                  { 
-                    image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80",
-                    text: "24/7 Customer Support"
-                  },
-                  { 
-                    image: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=800&q=80",
-                    text: "Real-time Notifications"
-                  },
-                  { 
-                    image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80",
-                    text: "Advanced Budgeting"
-                  }
-                ]}
-              />
-            </div>
+            <AppleCardsCarouselDemo />
           </motion.div>
 
           {/* Feature Details */}
@@ -710,17 +699,18 @@ const LandingNew = () => {
                 whileHover={{ scale: 1.05 }}
               >
                 <motion.div 
-                  className="w-16 h-16 mb-4 rounded-2xl bg-gradient-to-r from-green-400 to-green-600 flex items-center justify-center shadow-lg mx-auto"
+                  className="w-16 h-16 mb-4 rounded-2xl flex items-center justify-center shadow-lg mx-auto"
+                  style={{ background: 'linear-gradient(135deg, #9fd1b5 0%, #7bc299 100%)' }}
                   whileHover={{ rotate: [0, -10, 10, 0], scale: 1.1 }}
                   transition={{ duration: 0.4 }}
                 >
                   <feature.icon className="h-8 w-8 text-white" />
                 </motion.div>
                 
-                <h3 className="text-lg font-bold text-white mb-2 group-hover:text-green-400 transition-colors">
+                <h3 className="text-lg font-bold mb-2 transition-colors text-white">
                   {feature.title}
                 </h3>
-                <p className="text-gray-300 text-sm leading-relaxed">
+                <p className="text-sm leading-relaxed text-gray-300">
                   {feature.description}
                 </p>
               </motion.div>
@@ -744,10 +734,20 @@ const LandingNew = () => {
                 <p className="text-sm text-gray-600 uppercase tracking-wide font-medium">
                   ARE YOU STILL CONFUSED ABOUT YOUR PAYMENTS AND FINANCES? AHLAN IS HERE FOR YOU
                 </p>
-                <h2 className="text-4xl lg:text-5xl font-bold leading-tight">
+                <h2 
+                  className="text-4xl lg:text-5xl font-bold leading-tight"
+
+                >
                   Ahlan Is Here To Help You<br />
                   With Payments And Finances.<br />
-                  <span className="text-green-600">We Are There For You!</span>
+                  <span 
+                  // style={{
+                  //   background: 'linear-gradient(135deg, #9fd1b5 0%, #7bc299 50%, #5ab380 100%)',
+                  //   WebkitBackgroundClip: 'text',
+                  //   WebkitTextFillColor: 'transparent',
+                  //   backgroundClip: 'text'
+                  // }}
+                  >We Are There For You!</span>
                 </h2>
               </div>
               
@@ -807,13 +807,13 @@ const LandingNew = () => {
                           <span>85%</span>
                         </div>
                         <div className="w-full h-2 bg-gray-700 rounded-full">
-                          <div className="w-5/6 h-2 bg-green-600 rounded-full"></div>
+                          <div className="w-5/6 h-2 rounded-full" style={{ backgroundColor: '#9fd1b5' }}></div>
                         </div>
                       </div>
                       
-                      <div className="bg-green-600 text-white py-3 px-6 rounded-lg mt-8 font-medium hover:bg-green-500 transition-colors cursor-pointer">
-                        Widget Action
-                      </div>
+                                              <div className="text-white py-3 px-6 rounded-lg mt-8 font-medium transition-colors cursor-pointer" style={{ backgroundColor: '#9fd1b5' }}>
+                          Widget Action
+                        </div>
                     </div>
                   </div>
                 </motion.div>
@@ -827,12 +827,12 @@ const LandingNew = () => {
       </section>
 
       {/* Final CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-gray-800 via-gray-900 to-black relative">
+      <section className="py-20 relative" style={{ backgroundColor: '#181818' }}>
         {/* Background Pattern */}
         <div 
-          className="absolute inset-0 opacity-10"
+          className="absolute inset-0 opacity-5"
           style={{
-            backgroundImage: `radial-gradient(circle at 2px 2px, rgba(255,255,255,0.15) 1px, transparent 0)`,
+            backgroundImage: `radial-gradient(circle at 2px 2px, rgba(255,255,255,0.08) 1px, transparent 0)`,
             backgroundSize: '50px 50px'
           }}
         />
@@ -844,9 +844,9 @@ const LandingNew = () => {
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-4xl lg:text-5xl font-bold text-white mb-12">
+            <h2 className="text-4xl lg:text-5xl font-bold mb-12 text-white">
               Use Ahlan On Our Website<br />
-              <span className="text-green-400">Or Get The Mobile App</span>
+              <span className="text-white">Or Get The Mobile App</span>
             </h2>
 
             <div className="grid md:grid-cols-3 gap-8 mb-16">
@@ -864,8 +864,12 @@ const LandingNew = () => {
                   viewport={{ once: true }}
                   whileHover={{ scale: 1.05 }}
                 >
-                  <div className="text-5xl font-bold text-green-400 mb-2 group-hover:text-green-300 transition-colors">{stat.number}</div>
-                  <p className="text-gray-400">{stat.description}</p>
+                  <div className="text-5xl font-bold mb-2 transition-colors text-white">
+                    {stat.number}
+                  </div>
+                  <p className="text-gray-400">
+                    {stat.description}
+                  </p>
                 </motion.div>
               ))}
             </div>
@@ -894,19 +898,19 @@ const LandingNew = () => {
                   
                   {/* Floating UI elements */}
                   <motion.div
-                    className="absolute top-8 left-8 w-32 h-20 bg-green-100 rounded-lg flex items-center justify-center"
+                    className="absolute top-8 left-8 w-32 h-20 bg-gray-100 rounded-lg flex items-center justify-center"
                     animate={{ y: [-2, 2, -2] }}
                     transition={{ duration: 4, repeat: Infinity }}
                   >
-                    <span className="text-green-600 font-bold">$2,500</span>
+                    <span className="font-bold" style={{ color: '#9fd1b5' }}>$2,500</span>
                   </motion.div>
                   
                   <motion.div
-                    className="absolute bottom-8 right-8 w-24 h-16 bg-blue-100 rounded-lg flex items-center justify-center"
+                    className="absolute bottom-8 right-8 w-24 h-16 bg-gray-100 rounded-lg flex items-center justify-center"
                     animate={{ y: [2, -2, 2] }}
                     transition={{ duration: 3, repeat: Infinity }}
                   >
-                    <span className="text-blue-600 font-bold">85%</span>
+                    <span className="font-bold" style={{ color: '#9fd1b5' }}>85%</span>
                   </motion.div>
                 </div>
               </div>
@@ -924,10 +928,13 @@ const LandingNew = () => {
               transition={{ duration: 0.8, delay: 0.5 }}
               viewport={{ once: true }}
             >
-              <h3 className="text-2xl font-bold text-white mb-4">Get Ahlan Your Mobile Application</h3>
+              <h3 className="text-2xl font-bold mb-4 text-white">
+                Get Ahlan Your Mobile Application
+              </h3>
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                 <motion.button
-                  className="bg-black text-white px-6 py-3 rounded-lg flex items-center space-x-2 hover:bg-gray-800 transition-colors"
+                  className="text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors"
+                  style={{ backgroundColor: '#9fd1b5' }}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
@@ -935,7 +942,8 @@ const LandingNew = () => {
                   <span>Download for iOS</span>
                 </motion.button>
                 <motion.button
-                  className="bg-black text-white px-6 py-3 rounded-lg flex items-center space-x-2 hover:bg-gray-800 transition-colors"
+                  className="text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors"
+                  style={{ backgroundColor: '#9fd1b5' }}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
@@ -1037,9 +1045,9 @@ const LandingNew = () => {
               transition={{ delay: 0.6, duration: 0.6 }}
               viewport={{ once: true }}
             >
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <button className="bg-green-600 hover:bg-green-500 text-white px-8 py-4 rounded-2xl font-semibold text-lg transition-all shadow-xl hover:shadow-green-500/25">
-                  <Link to="/auth" className="text-white">Get Started Now →</Link>
+                              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <button className="text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all shadow-xl" style={{ backgroundColor: '#9fd1b5' }}>
+                  <Link to="/auth" className="text-black">Get Started Now →</Link>
                 </button>
               </motion.div>
             </motion.div>
@@ -1048,7 +1056,7 @@ const LandingNew = () => {
       </section>
 
       {/* Footer */}
-      <footer className="py-16 bg-black border-t border-gray-800">
+      <footer className="py-16 border-t" style={{ backgroundColor: '#181818', borderColor: '#262626' }}>
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
