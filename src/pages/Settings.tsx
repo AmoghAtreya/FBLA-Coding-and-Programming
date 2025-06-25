@@ -50,7 +50,12 @@ import {
   EyeOff,
   Camera,
   Save,
-  RefreshCw
+  RefreshCw,
+  CheckCircle,
+  AlertCircle,
+  UserCheck,
+  Palette,
+  Database
 } from 'lucide-react';
 
 const fadeInUp = {
@@ -167,75 +172,96 @@ const Settings = () => {
 
   return (
     <Layout>
-      <div className="min-h-screen text-white">
+      <div className="min-h-screen" style={{ backgroundColor: '#f8fafc' }}>
         {/* Header Section */}
+        <div className="bg-white border-b border-gray-200 px-8 py-12 mb-8">
         <motion.div 
-          className="mb-8"
+            className="max-w-7xl mx-auto"
           variants={stagger}
           initial="initial"
           animate="animate"
         >
-          <motion.h1 
-            className="text-4xl lg:text-5xl font-bold mb-4"
+            <motion.div 
+              className="flex items-center space-x-4 mb-6"
             variants={fadeInUp}
           >
-            Account <span className="text-green-400">Settings</span>
-          </motion.h1>
-          <motion.p 
-            className="text-xl text-gray-300 max-w-2xl"
+              <div className="p-4 rounded-2xl" style={{ backgroundColor: '#9fd1b5' }}>
+                <SettingsIcon className="h-8 w-8 text-black" />
+              </div>
+              <div>
+                <h1 className="text-4xl lg:text-5xl font-bold text-gray-900">
+                  Account Settings
+                </h1>
+                <p className="text-xl text-gray-600 mt-2">
+                  Manage your account preferences and security settings
+                </p>
+              </div>
+            </motion.div>
+            
+            {/* Status Badge */}
+            <motion.div 
+              className="flex items-center space-x-2"
             variants={fadeInUp}
           >
-            Manage your account preferences, security settings, and privacy controls.
-          </motion.p>
+              <Badge className="bg-green-100 text-green-800 border-green-200">
+                <CheckCircle className="h-3 w-3 mr-1" />
+                Account Verified
+              </Badge>
+              <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+                Premium Member
+              </Badge>
+            </motion.div>
         </motion.div>
+        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Profile Section */}
-          <motion.div
-            className="lg:col-span-2 space-y-6"
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-          >
+        <div className="max-w-7xl mx-auto px-8 pb-12">
+          <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+            {/* Main Content */}
+            <div className="xl:col-span-3 space-y-8">
             {/* Profile Information */}
             <motion.div
               variants={cardVariants}
-              whileHover={{ scale: 1.01 }}
-              className="bg-gray-900/50 rounded-2xl p-6 backdrop-blur-sm border border-gray-700/50 shadow-2xl"
-            >
-              <div className="flex items-center space-x-4 mb-6">
-                <div className="p-3 bg-green-600/20 rounded-xl">
-                  <User className="h-6 w-6 text-green-400" />
+                initial="hidden"
+                animate="visible"
+                className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden"
+              >
+                {/* Card Header */}
+                <div className="px-8 py-6 border-b border-gray-100" style={{ backgroundColor: '#fafbfc' }}>
+                  <div className="flex items-center space-x-4">
+                    <div className="p-3 rounded-xl" style={{ backgroundColor: '#9fd1b5' }}>
+                      <User className="h-6 w-6 text-black" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">Profile Information</h3>
-                  <p className="text-gray-400">Update your personal details</p>
+                      <h2 className="text-2xl font-bold text-gray-900">Profile Information</h2>
+                      <p className="text-gray-600">Update your personal details and public profile</p>
+                    </div>
                 </div>
               </div>
 
-              <div className="space-y-6">
+                <div className="p-8">
                 {/* Avatar Section */}
-                <div className="flex items-center space-x-6">
+                  <div className="flex items-center space-x-8 mb-8 p-6 bg-gray-50 rounded-2xl">
                   <div className="relative">
-                    <Avatar className="h-20 w-20">
+                      <Avatar className="h-24 w-24 border-4 border-white shadow-lg">
                       <AvatarImage src={user?.user_metadata?.avatar_url} />
-                      <AvatarFallback className="bg-green-600 text-white text-xl">
+                        <AvatarFallback className="text-white text-2xl font-bold" style={{ backgroundColor: '#9fd1b5' }}>
                         {profileData.firstName?.charAt(0) || profileData.email?.charAt(0)?.toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <button className="absolute -bottom-2 -right-2 p-2 bg-green-600 rounded-full text-white hover:bg-green-500 transition-colors">
+                      <button className="absolute -bottom-2 -right-2 p-3 rounded-full text-black hover:brightness-90 transition-all duration-200 shadow-lg border-2 border-white"
+                        style={{ backgroundColor: '#9fd1b5' }}>
                       <Camera className="h-4 w-4" />
                     </button>
                   </div>
-                  <div>
-                    <h4 className="font-semibold text-white">Profile Picture</h4>
-                    <p className="text-sm text-gray-400">JPG, GIF or PNG. Max size 2MB.</p>
-                    <div className="flex space-x-2 mt-2">
-                      <Button size="sm" variant="outline" className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700">
+                    <div className="flex-1">
+                      <h3 className="text-xl font-semibold text-gray-900 mb-2">Profile Picture</h3>
+                      <p className="text-gray-600 mb-4">Upload a new profile picture. JPG, PNG or GIF. Max size 2MB.</p>
+                      <div className="flex space-x-3">
+                        <Button className="text-black hover:brightness-90" style={{ backgroundColor: '#9fd1b5' }}>
                         <Upload className="h-4 w-4 mr-2" />
-                        Upload
+                          Upload Photo
                       </Button>
-                      <Button size="sm" variant="ghost" className="text-gray-400 hover:text-white">
+                        <Button variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50">
                         Remove
                       </Button>
                     </div>
@@ -243,202 +269,237 @@ const Settings = () => {
                 </div>
 
                 {/* Form Fields */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="firstName" className="text-gray-300">First Name</Label>
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-3">
+                        <Label htmlFor="firstName" className="text-sm font-semibold text-gray-700">First Name</Label>
                     <Input
                       id="firstName"
                       value={profileData.firstName}
                       onChange={(e) => setProfileData(prev => ({ ...prev, firstName: e.target.value }))}
-                      className="bg-gray-800 border-gray-600 text-white focus:border-green-500"
+                          className="h-12 border-gray-200 focus:border-[#9fd1b5] focus:ring-[#9fd1b5] rounded-xl"
+                          placeholder="Enter your first name"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="lastName" className="text-gray-300">Last Name</Label>
+                      <div className="space-y-3">
+                        <Label htmlFor="lastName" className="text-sm font-semibold text-gray-700">Last Name</Label>
                     <Input
                       id="lastName"
                       value={profileData.lastName}
                       onChange={(e) => setProfileData(prev => ({ ...prev, lastName: e.target.value }))}
-                      className="bg-gray-800 border-gray-600 text-white focus:border-green-500"
+                          className="h-12 border-gray-200 focus:border-[#9fd1b5] focus:ring-[#9fd1b5] rounded-xl"
+                          placeholder="Enter your last name"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-gray-300">Email Address</Label>
+                    <div className="space-y-3">
+                      <Label htmlFor="email" className="text-sm font-semibold text-gray-700">Email Address</Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                        <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                     <Input
                       id="email"
                       type="email"
                       value={profileData.email}
                       disabled
-                      className="pl-10 bg-gray-800 border-gray-600 text-gray-400"
+                          className="h-12 pl-12 border-gray-200 bg-gray-50 text-gray-500 rounded-xl"
                     />
+                        <Badge className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-green-100 text-green-800 border-green-200">
+                          Verified
+                        </Badge>
                   </div>
-                  <p className="text-xs text-gray-500">Email cannot be changed</p>
+                      <p className="text-sm text-gray-500">Your email address cannot be changed for security reasons</p>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="phone" className="text-gray-300">Phone Number</Label>
+                    <div className="space-y-3">
+                      <Label htmlFor="phone" className="text-sm font-semibold text-gray-700">Phone Number</Label>
                   <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                        <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                     <Input
                       id="phone"
                       type="tel"
                       value={profileData.phone}
                       onChange={(e) => setProfileData(prev => ({ ...prev, phone: e.target.value }))}
-                      className="pl-10 bg-gray-800 border-gray-600 text-white focus:border-green-500"
+                          className="h-12 pl-12 border-gray-200 focus:border-[#9fd1b5] focus:ring-[#9fd1b5] rounded-xl"
                       placeholder="+1 (555) 123-4567"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="bio" className="text-gray-300">Bio</Label>
+                    <div className="space-y-3">
+                      <Label htmlFor="bio" className="text-sm font-semibold text-gray-700">Bio</Label>
                   <textarea
                     id="bio"
                     value={profileData.bio}
                     onChange={(e) => setProfileData(prev => ({ ...prev, bio: e.target.value }))}
-                    className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white focus:border-green-500 resize-none"
-                    rows={3}
+                        className="w-full p-4 border border-gray-200 rounded-xl focus:border-[#9fd1b5] focus:ring-[#9fd1b5] resize-none"
+                        rows={4}
                     placeholder="Tell us about yourself..."
+                        maxLength={160}
                   />
-                  <p className="text-xs text-gray-500">{profileData.bio.length}/160 characters</p>
+                      <div className="flex justify-between items-center">
+                        <p className="text-sm text-gray-500">Brief description for your profile</p>
+                        <p className="text-sm text-gray-400">{profileData.bio.length}/160</p>
+                      </div>
                 </div>
 
+                    <div className="pt-4">
                 <Button 
                   onClick={handleProfileUpdate}
                   disabled={isLoading}
-                  className="bg-green-600 hover:bg-green-500 text-white"
-                >
-                  {isLoading ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                        className="h-12 px-8 text-black hover:brightness-90 rounded-xl font-semibold"
+                        style={{ backgroundColor: '#9fd1b5' }}
+                      >
+                        {isLoading ? (
+                          <>
+                            <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
+                            Saving Changes...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="h-5 w-5 mr-2" />
                   Save Changes
+                          </>
+                        )}
                 </Button>
+                    </div>
+                  </div>
               </div>
             </motion.div>
 
             {/* Preferences */}
             <motion.div
               variants={cardVariants}
-              whileHover={{ scale: 1.01 }}
-              className="bg-gray-900/50 rounded-2xl p-6 backdrop-blur-sm border border-gray-700/50 shadow-2xl"
-            >
-              <div className="flex items-center space-x-4 mb-6">
-                <div className="p-3 bg-blue-600/20 rounded-xl">
-                  <SettingsIcon className="h-6 w-6 text-blue-400" />
+                initial="hidden"
+                animate="visible"
+                className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden"
+              >
+                <div className="px-8 py-6 border-b border-gray-100" style={{ backgroundColor: '#fafbfc' }}>
+                  <div className="flex items-center space-x-4">
+                    <div className="p-3 bg-blue-100 rounded-xl">
+                      <Palette className="h-6 w-6 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">Preferences</h3>
-                  <p className="text-gray-400">Customize your app experience</p>
+                      <h2 className="text-2xl font-bold text-gray-900">App Preferences</h2>
+                      <p className="text-gray-600">Customize your app experience and regional settings</p>
+                    </div>
                 </div>
               </div>
 
+                <div className="p-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-gray-300">Language</Label>
+                      <div className="space-y-3">
+                        <Label className="text-sm font-semibold text-gray-700">Language</Label>
                     <Select value={preferences.language} onValueChange={(value) => setPreferences(prev => ({ ...prev, language: value }))}>
-                      <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                          <SelectTrigger className="h-12 border-gray-200 rounded-xl">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-gray-800 border-gray-600">
-                        <SelectItem value="en">English</SelectItem>
-                        <SelectItem value="es">Español</SelectItem>
-                        <SelectItem value="fr">Français</SelectItem>
-                        <SelectItem value="de">Deutsch</SelectItem>
+                          <SelectContent>
+                            <SelectItem value="en">🇺🇸 English</SelectItem>
+                            <SelectItem value="es">🇪🇸 Español</SelectItem>
+                            <SelectItem value="fr">🇫🇷 Français</SelectItem>
+                            <SelectItem value="de">🇩🇪 Deutsch</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label className="text-gray-300">Currency</Label>
+                      <div className="space-y-3">
+                        <Label className="text-sm font-semibold text-gray-700">Currency</Label>
                     <Select value={preferences.currency} onValueChange={(value) => setPreferences(prev => ({ ...prev, currency: value }))}>
-                      <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                          <SelectTrigger className="h-12 border-gray-200 rounded-xl">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-gray-800 border-gray-600">
-                        <SelectItem value="USD">USD ($)</SelectItem>
-                        <SelectItem value="EUR">EUR (€)</SelectItem>
-                        <SelectItem value="GBP">GBP (£)</SelectItem>
-                        <SelectItem value="CAD">CAD (C$)</SelectItem>
+                          <SelectContent>
+                            <SelectItem value="USD">💵 USD ($)</SelectItem>
+                            <SelectItem value="EUR">💶 EUR (€)</SelectItem>
+                            <SelectItem value="GBP">💷 GBP (£)</SelectItem>
+                            <SelectItem value="CAD">🍁 CAD (C$)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label className="text-gray-300">Timezone</Label>
+                    <div className="space-y-6">
+                      <div className="space-y-3">
+                        <Label className="text-sm font-semibold text-gray-700">Timezone</Label>
                   <Select value={preferences.timezone} onValueChange={(value) => setPreferences(prev => ({ ...prev, timezone: value }))}>
-                    <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                          <SelectTrigger className="h-12 border-gray-200 rounded-xl">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-800 border-gray-600">
-                      <SelectItem value="UTC">UTC</SelectItem>
-                      <SelectItem value="EST">Eastern Time</SelectItem>
-                      <SelectItem value="PST">Pacific Time</SelectItem>
-                      <SelectItem value="CST">Central Time</SelectItem>
+                          <SelectContent>
+                            <SelectItem value="UTC">🌍 UTC</SelectItem>
+                            <SelectItem value="EST">🇺🇸 Eastern Time</SelectItem>
+                            <SelectItem value="PST">🇺🇸 Pacific Time</SelectItem>
+                            <SelectItem value="CST">🇺🇸 Central Time</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
-                <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
+                      <div className="p-6 bg-gray-50 rounded-2xl">
+                        <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <Moon className="h-5 w-5 text-gray-400" />
+                            <div className="p-2 bg-gray-700 rounded-lg">
+                              <Moon className="h-5 w-5 text-white" />
+                            </div>
                     <div>
-                      <Label className="text-white">Dark Mode</Label>
-                      <p className="text-sm text-gray-400">Use dark theme across the app</p>
+                              <Label className="text-sm font-semibold text-gray-900">Dark Mode</Label>
+                              <p className="text-sm text-gray-600">Use dark theme across the application</p>
                     </div>
                   </div>
                   <Switch 
                     checked={preferences.darkMode}
                     onCheckedChange={(checked) => setPreferences(prev => ({ ...prev, darkMode: checked }))}
-                    className="data-[state=checked]:bg-green-600"
+                            className="data-[state=checked]:bg-[#9fd1b5]"
                   />
+                        </div>
+                      </div>
+                    </div>
                 </div>
               </div>
             </motion.div>
-          </motion.div>
+            </div>
 
           {/* Sidebar */}
-          <motion.div
-            className="space-y-6"
-            initial={{ opacity: 0, x: 30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-          >
+            <div className="xl:col-span-1 space-y-6">
             {/* Security */}
             <motion.div
               variants={cardVariants}
-              whileHover={{ scale: 1.01 }}
-              className="bg-gray-900/50 rounded-2xl p-6 backdrop-blur-sm border border-gray-700/50 shadow-2xl"
-            >
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="p-2 bg-red-600/20 rounded-lg">
-                  <Shield className="h-5 w-5 text-red-400" />
+                initial="hidden"
+                animate="visible"
+                className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden"
+              >
+                <div className="px-6 py-5 border-b border-gray-100" style={{ backgroundColor: '#fafbfc' }}>
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-red-100 rounded-lg">
+                      <Shield className="h-5 w-5 text-red-600" />
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900">Security</h3>
                 </div>
-                <h3 className="text-lg font-bold text-white">Security</h3>
               </div>
               
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-white text-sm">Two-Factor Authentication</Label>
-                    <p className="text-xs text-gray-400">Extra security for your account</p>
+                <div className="p-6 space-y-4">
+                  <div className="p-4 bg-green-50 rounded-xl border border-green-200">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-2">
+                        <UserCheck className="h-4 w-4 text-green-600" />
+                        <Label className="text-sm font-semibold text-green-900">Two-Factor Auth</Label>
                   </div>
                   <Switch 
                     checked={privacy.twoFactor}
                     onCheckedChange={(checked) => setPrivacy(prev => ({ ...prev, twoFactor: checked }))}
                     className="data-[state=checked]:bg-green-600"
                   />
+                    </div>
+                    <p className="text-xs text-green-700">Extra security layer for your account</p>
                 </div>
                 
-                <Button variant="outline" className="w-full bg-gray-800 border-gray-600 text-white hover:bg-gray-700">
+                  <Button variant="outline" className="w-full h-11 border-gray-200 hover:bg-gray-50 rounded-xl">
                   <Lock className="h-4 w-4 mr-2" />
                   Change Password
                 </Button>
                 
-                <Button variant="outline" className="w-full bg-gray-800 border-gray-600 text-white hover:bg-gray-700">
+                  <Button variant="outline" className="w-full h-11 border-gray-200 hover:bg-gray-50 rounded-xl">
                   <Smartphone className="h-4 w-4 mr-2" />
                   Manage Devices
                 </Button>
@@ -448,27 +509,32 @@ const Settings = () => {
             {/* Notifications */}
             <motion.div
               variants={cardVariants}
-              whileHover={{ scale: 1.01 }}
-              className="bg-gray-900/50 rounded-2xl p-6 backdrop-blur-sm border border-gray-700/50 shadow-2xl"
-            >
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="p-2 bg-yellow-600/20 rounded-lg">
-                  <Bell className="h-5 w-5 text-yellow-400" />
+                initial="hidden"
+                animate="visible"
+                className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden"
+              >
+                <div className="px-6 py-5 border-b border-gray-100" style={{ backgroundColor: '#fafbfc' }}>
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-yellow-100 rounded-lg">
+                      <Bell className="h-5 w-5 text-yellow-600" />
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900">Notifications</h3>
                 </div>
-                <h3 className="text-lg font-bold text-white">Notifications</h3>
               </div>
               
-              <div className="space-y-3">
+                <div className="p-6 space-y-4">
                 {Object.entries(preferences.notifications).map(([key, value]) => (
-                  <div key={key} className="flex items-center justify-between">
-                    <Label className="text-white text-sm capitalize">{key.replace(/([A-Z])/g, ' $1')}</Label>
+                    <div key={key} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                      <Label className="text-sm font-medium text-gray-900 capitalize">
+                        {key.replace(/([A-Z])/g, ' $1')}
+                      </Label>
                     <Switch 
                       checked={value}
                       onCheckedChange={(checked) => setPreferences(prev => ({
                         ...prev,
                         notifications: { ...prev.notifications, [key]: checked }
                       }))}
-                      className="data-[state=checked]:bg-green-600"
+                        className="data-[state=checked]:bg-[#9fd1b5]"
                     />
                   </div>
                 ))}
@@ -478,63 +544,71 @@ const Settings = () => {
             {/* Data & Privacy */}
             <motion.div
               variants={cardVariants}
-              whileHover={{ scale: 1.01 }}
-              className="bg-gray-900/50 rounded-2xl p-6 backdrop-blur-sm border border-gray-700/50 shadow-2xl"
-            >
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="p-2 bg-purple-600/20 rounded-lg">
-                  <Eye className="h-5 w-5 text-purple-400" />
+                initial="hidden"
+                animate="visible"
+                className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden"
+              >
+                <div className="px-6 py-5 border-b border-gray-100" style={{ backgroundColor: '#fafbfc' }}>
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-purple-100 rounded-lg">
+                      <Database className="h-5 w-5 text-purple-600" />
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900">Data & Privacy</h3>
                 </div>
-                <h3 className="text-lg font-bold text-white">Privacy</h3>
               </div>
               
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="p-6 space-y-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
                   <div>
-                    <Label className="text-white text-sm">Profile Visibility</Label>
-                    <p className="text-xs text-gray-400">Make profile visible to others</p>
+                        <Label className="text-sm font-medium text-gray-900">Profile Visibility</Label>
+                        <p className="text-xs text-gray-600">Make profile visible to others</p>
                   </div>
                   <Switch 
                     checked={privacy.profileVisible}
                     onCheckedChange={(checked) => setPrivacy(prev => ({ ...prev, profileVisible: checked }))}
-                    className="data-[state=checked]:bg-green-600"
+                        className="data-[state=checked]:bg-[#9fd1b5]"
                   />
                 </div>
                 
-                <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
                   <div>
-                    <Label className="text-white text-sm">Data Sharing</Label>
-                    <p className="text-xs text-gray-400">Share data with partners</p>
+                        <Label className="text-sm font-medium text-gray-900">Data Sharing</Label>
+                        <p className="text-xs text-gray-600">Share analytics with partners</p>
                   </div>
                   <Switch 
                     checked={privacy.dataSharing}
                     onCheckedChange={(checked) => setPrivacy(prev => ({ ...prev, dataSharing: checked }))}
-                    className="data-[state=checked]:bg-green-600"
+                        className="data-[state=checked]:bg-[#9fd1b5]"
                   />
+                    </div>
                 </div>
                 
-                <Separator className="bg-gray-700" />
+                  <Separator className="my-4" />
                 
+                  <div className="space-y-3">
                 <Button 
                   variant="outline" 
-                  className="w-full bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
+                      className="w-full h-11 border-gray-200 hover:bg-gray-50 rounded-xl"
                   onClick={handleExportData}
                 >
                   <Download className="h-4 w-4 mr-2" />
-                  Export Data
+                      Export My Data
                 </Button>
                 
                 <Button 
                   variant="destructive" 
-                  className="w-full"
+                      className="w-full h-11 bg-red-600 hover:bg-red-700 rounded-xl"
                   onClick={handleDeleteAccount}
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Delete Account
                 </Button>
               </div>
-            </motion.div>
+                </div>
           </motion.div>
+            </div>
+          </div>
         </div>
       </div>
     </Layout>

@@ -29,17 +29,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         
-        if (event === 'SIGNED_IN') {
-          toast({
-            title: "Signed in successfully",
-            description: "Welcome back to FinFlow!",
-          });
-        } else if (event === 'SIGNED_OUT') {
-          toast({
-            title: "Signed out successfully",
-            description: "You have been signed out of FinFlow.",
-          });
-        }
       }
     );
 

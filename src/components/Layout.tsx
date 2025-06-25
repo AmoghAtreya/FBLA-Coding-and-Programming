@@ -5,7 +5,7 @@
  * - Fixed collapsible left sidebar navigation
  * - Full-width content area
  * - Fixed collapsible right sidebar with card and quick transaction
- * - Sleek metallic grey/black design with green accents
+ * - Dark theme matching the new landing page
  */
 
 import React, { useState } from 'react';
@@ -48,6 +48,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { toast } from 'sonner';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -137,26 +138,45 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-100 flex overflow-hidden">
-      {/* Left Sidebar - Fixed Height */}
+    <div className="min-h-screen flex overflow-hidden" style={{ backgroundColor: '#f8fafc' }}>
+      {/* Left Sidebar - Dark Theme to Match Landing */}
       <motion.div 
-        className="bg-gray-900 border-r border-gray-800 flex flex-col relative h-screen overflow-hidden"
+        className="flex flex-col relative h-screen overflow-hidden border-r"
+        style={{ 
+          backgroundColor: '#181818',
+          borderColor: '#262626'
+        }}
         animate={{ width: isLeftSidebarCollapsed ? 80 : 256 }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
       >
+        {/* Background Pattern - Same as Landing */}
+        <div 
+          className="absolute inset-0 opacity-5 pointer-events-none"
+          style={{
+            backgroundImage: `radial-gradient(circle at 2px 2px, rgba(255,255,255,0.05) 1px, transparent 0)`,
+            backgroundSize: '40px 40px'
+          }}
+        />
+
         {/* Collapse Button */}
         <button
           onClick={() => setIsLeftSidebarCollapsed(!isLeftSidebarCollapsed)}
-          className="absolute -right-3 top-8 z-50 w-6 h-6 bg-gray-900 border border-gray-700 rounded-full flex items-center justify-center text-white hover:bg-gray-800 transition-colors"
+          className="fixed top-[25px] z-[50] w-7 h-7 rounded-full flex items-center justify-center text-black hover:brightness-90 transition-all duration-300 shadow-lg border-2"
+          style={{
+            left: isLeftSidebarCollapsed ? '68px' : '244px',
+            backgroundColor: '#333333',
+            borderColor: '#1a1a1a',
+            color: '#ffffff'
+          }}
         >
-          {isLeftSidebarCollapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
+          {isLeftSidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </button>
 
         {/* Logo */}
-        <div className="p-6 border-b border-gray-800 flex-shrink-0">
+        <div className="p-6 border-b flex-shrink-0 relative z-10" style={{ borderColor: '#262626' }}>
           <Link to="/" className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-              <span className="text-gray-900 font-bold text-lg">A</span>
+              <span className="text-black font-bold text-lg">A</span>
             </div>
             <AnimatePresence>
               {!isLeftSidebarCollapsed && (
@@ -175,16 +195,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </div>
 
         {/* Navigation - Scrollable if needed */}
-        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto relative z-10">
           {navigationItems.map((item) => (
             <div key={item.name}>
               <button
                 onClick={() => handleNavigation(item.path)}
                 className={`w-full flex items-center justify-between p-3 rounded-lg text-sm font-medium transition-all duration-200 ${
                   item.active
-                    ? 'bg-gray-800 text-white border-l-4 border-green-500'
-                    : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                    ? 'text-black font-medium'
+                    : 'text-gray-300 hover:text-white hover:bg-gray-800/50'
                 }`}
+                style={item.active ? { backgroundColor: '#9fd1b5' } : {}}
               >
                 <div className="flex items-center space-x-3">
                   <item.icon className="h-5 w-5" />
@@ -234,7 +255,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   {item.submenu.map((subItem) => (
                     <div
                       key={subItem}
-                      className="text-gray-500 text-sm py-2 px-3 hover:text-gray-300 cursor-pointer"
+                      className="text-gray-400 text-sm py-2 px-3 hover:text-gray-200 cursor-pointer rounded-lg hover:bg-gray-800/30 transition-colors"
                     >
                       {subItem}
                     </div>
@@ -246,7 +267,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </nav>
 
         {/* Account Section - Fixed at bottom */}
-        <div className="p-4 border-t border-gray-800 flex-shrink-0">
+        <div className="p-4 border-t flex-shrink-0 relative z-10" style={{ borderColor: '#262626' }}>
           <AnimatePresence>
             {!isLeftSidebarCollapsed && (
               <motion.div 
@@ -266,9 +287,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               onClick={() => handleNavigation(item.path)}
               className={`w-full flex items-center space-x-3 p-3 rounded-lg text-sm font-medium transition-all duration-200 ${
                 item.active
-                  ? 'bg-gray-800 text-white'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                  ? 'text-black font-medium'
+                  : 'text-gray-300 hover:text-white hover:bg-gray-800/50'
               }`}
+              style={item.active ? { backgroundColor: '#9fd1b5' } : {}}
             >
               <item.icon className="h-5 w-5" />
               <AnimatePresence>
@@ -292,7 +314,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 handleSignOut();
               }
             }}
-            className="w-full flex items-center space-x-3 p-3 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-800 transition-all duration-200 mt-2"
+            className="w-full flex items-center space-x-3 p-3 rounded-lg text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-900/20 transition-all duration-200 mt-2"
           >
             <LogOut className="h-5 w-5" />
             <AnimatePresence>
@@ -325,7 +347,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   <input
                     type="text"
                     placeholder="Search anything"
-                    className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#9fd1b5] focus:border-transparent"
                   />
                 </div>
               </div>
@@ -341,14 +363,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-lg">
-                      <div className="w-8 h-8 bg-gradient-to-r from-green-400 to-green-600 rounded-full flex items-center justify-center">
-                        <span className="text-white font-medium text-sm">
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: '#9fd1b5' }}>
+                        <span className="text-black font-medium text-sm">
                           {user?.email?.charAt(0)?.toUpperCase() || 'A'}
                         </span>
                       </div>
                       <div className="hidden md:block text-left">
                         <div className="text-sm font-medium text-gray-900">
-                          {user?.email?.split('@')[0] || 'Aksara Pratama M'}
+                          {user?.email?.split('@')[0] || 'User'}
                         </div>
                         <div className="text-xs text-gray-500">Premium User</div>
                       </div>
@@ -469,7 +491,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                                 {/* Card Header */}
                                 <div className="flex justify-between items-start">
                                   <div>
-                                    <p className="text-white/90 text-xs mb-1 font-medium text-left">{user?.email?.split('@')[0] || 'Aksara Pratama M'}</p>
+                                    <p className="text-white/90 text-xs mb-1 font-medium text-left">{user?.email?.split('@')[0] || 'User'}</p>
                                     {/* <p className="text-white font-semibold text-sm tracking-wide">Amazon Platinum</p> */}
                                   </div>
                                   <div className="text-right">
@@ -497,7 +519,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                                 
                                 {/* Card Number and Balance */}
                                 <div>
-                                  <p className="text-white/80 text-sm mb-1 font-mono tracking-widest">4756 •••• •••• 9018</p>
+                                  <p className="text-white/80 text-sm mb-1 font-mono tracking-widest">•••• •••• •••• 9018</p>
                                   {/*    */}
                                 </div>
                                 
@@ -524,10 +546,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                           <div className="space-y-5">
                             <div className="bg-gray-50 rounded-lg p-4">
                               <p className="text-sm text-gray-500 mb-2">Card holder</p>
-                              <p className="font-semibold text-gray-900 text-lg">{user?.email?.split('@')[0] || 'Aksara Pratama M'}</p>
+                              <p className="font-semibold text-gray-900 text-lg">{user?.email?.split('@')[0] || 'User'}</p>
                             </div>
                             
-                            <div className="bg-gray-50 rounded-lg p-4">
+                            {/* <div className="bg-gray-50 rounded-lg p-4">
                               <p className="text-sm text-gray-500 mb-2">Card number</p>
                               <div className="flex items-center justify-between">
                                 <p className="font-mono font-semibold text-gray-900 text-lg">4756 3232 9988 9018</p>
@@ -535,7 +557,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                                   <Copy className="h-4 w-4" />
                                 </Button>
                               </div>
-                            </div>
+                            </div> */}
                             
                             <div className="grid grid-cols-3 gap-3">
                               <div className="bg-gray-50 rounded-lg p-3 text-center">
@@ -569,7 +591,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                                 </div>
                                 <div>
                                   <p className="text-xs text-gray-500 mb-1">Cashback</p>
-                                  <p className="font-bold text-green-600">${(parseFloat(totalExpenses) * 10.12).toLocaleString()}</p>
+                                  <p className="font-bold" style={{ color: '#9fd1b5' }}>${(parseFloat(totalExpenses.replace(/,/g, '')) * 0.12).toLocaleString()}</p>
                                 </div>
                               </div>
                             </div>
@@ -585,20 +607,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   <CardHeader className="pb-4">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-lg font-semibold text-gray-900">Quick Transaction</CardTitle>
-                      <Button variant="ghost" size="sm">
+                      {/* <Button variant="ghost" size="sm">
                         <MoreHorizontal className="h-4 w-4" />
-                      </Button>
+                      </Button> */}
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-6">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-center">
                       <div className="flex -space-x-2">
                         {[
                           { name: 'F', color: 'from-blue-400 to-blue-600' },
                           { name: 'A', color: 'from-green-400 to-green-600' },
                           { name: 'G', color: 'from-purple-400 to-purple-600' },
                           { name: 'F', color: 'from-red-400 to-red-600' },
-                          { name: 'A', color: 'from-yellow-400 to-yellow-600' }
                         ].map((person, i) => (
                           <div 
                             key={i}
@@ -621,11 +642,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                       </div>
                     </div>
                     
-                    <div className="text-center">
-                      <div className="text-sm text-gray-500">Aksara</div>
-                    </div>
-                    
-                    <div>
+                    {/* <div>
                       <p className="text-sm text-gray-500 mb-2">Recipient's account</p>
                       <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3 border border-gray-200">
                         <span className="text-sm text-gray-900 font-mono">4843 - 1234 - 3422 - 9450</span>
@@ -633,7 +650,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                           <Eye className="h-4 w-4" />
                         </Button>
                       </div>
-                    </div>
+                    </div> */}
 
                     <Button 
                       className="w-full bg-green-600 hover:bg-green-700 text-white"
@@ -666,13 +683,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         variant="outline" 
                         className="w-full justify-start text-left"
                         onClick={() => {
-                          const transactions = JSON.stringify(getTotalBalance());
-                          navigator.clipboard.writeText(transactions);
-                          alert('Balance copied to clipboard!');
+                          navigator.clipboard.writeText(getTotalBalance().toString());
                         }}
                       >
                         <Copy className="h-4 w-4 mr-3" />
-                        Export Balance
+                        Copy Balance
                       </Button>
                       
                       <Button 

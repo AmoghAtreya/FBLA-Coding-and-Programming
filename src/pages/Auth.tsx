@@ -161,18 +161,27 @@ const Auth = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-800 via-gray-900 to-black text-white overflow-hidden relative">
-      {/* Geometric Background Pattern */}
+    <div className="min-h-screen text-white overflow-hidden relative" style={{ backgroundColor: '#181818' }}>
+      {/* Top Left Light Effect - matches landing page */}
+      <div 
+        className="fixed inset-0 pointer-events-none z-0"
+        style={{
+          background: `radial-gradient(circle at 10% 10%, rgba(57, 57, 57, 0.4) 0%, transparent 45%)`
+        }}
+      />
+      
+      {/* Geometric Background Pattern - matches landing page */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 right-20 w-96 h-96 border border-gray-700/30 rotate-45 rounded-3xl"></div>
-        <div className="absolute bottom-40 left-10 w-64 h-64 border border-gray-600/20 rotate-12 rounded-2xl"></div>
-        <div className="absolute top-1/2 left-1/3 w-32 h-32 bg-gradient-to-r from-gray-700/10 to-gray-800/10 rotate-45 rounded-lg"></div>
+        {/* Large geometric shapes */}
+        <div className="absolute top-20 right-20 w-96 h-96 border border-gray-700/20 rotate-45 rounded-3xl"></div>
+        <div className="absolute bottom-40 left-10 w-64 h-64 border border-gray-600/15 rotate-12 rounded-2xl"></div>
+        <div className="absolute top-1/2 left-1/3 w-32 h-32 bg-gradient-to-r from-gray-700/5 to-gray-800/5 rotate-45 rounded-lg"></div>
         
         {/* Dot pattern */}
         <div 
-          className="absolute inset-0 opacity-20"
+          className="absolute inset-0 opacity-10"
           style={{
-            backgroundImage: `radial-gradient(circle at 2px 2px, rgba(255,255,255,0.1) 1px, transparent 0)`,
+            backgroundImage: `radial-gradient(circle at 2px 2px, rgba(255,255,255,0.05) 1px, transparent 90)`,
             backgroundSize: '40px 40px'
           }}
         />
@@ -181,42 +190,57 @@ const Auth = () => {
         <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <pattern id="auth-grid" width="60" height="60" patternUnits="userSpaceOnUse">
-              <path d="M 60 0 L 0 0 0 60" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="1"/>
+              <path d="M 60 0 L 0 0 0 60" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="1"/>
             </pattern>
           </defs>
           <rect width="100%" height="100%" fill="url(#auth-grid)" />
         </svg>
       </div>
 
-      {/* Header */}
+      {/* Navigation Header - matches landing page */}
       <motion.nav 
-        className="relative z-10 p-6"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
+        className="fixed top-0 left-0 right-0 z-50"
+        style={{ 
+          background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #1f1f1f 100%)',
+          backgroundColor: '#1a1a1a'
+        }}
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.8 }}
       >
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <motion.div 
-            className="text-2xl font-bold text-white flex items-center space-x-2"
-            whileHover={{ scale: 1.02 }}
-          >
-            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-              <span className="text-black font-bold text-lg">A</span>
-            </div>
-            <Link to="/landing-new">Ahlan.</Link>
-          </motion.div>
-          
-          <Link 
-            to="/landing-new"
-            className="text-gray-300 hover:text-white transition-colors"
-          >
-            Back to Home
-          </Link>
+        <div className="max-w-7xl mx-auto px-6 py-3">
+          <div className="flex items-center justify-between">
+            {/* Logo */}
+            <motion.div 
+              className="text-xl font-bold flex items-center space-x-2 text-white"
+              whileHover={{ scale: 1.02 }}
+              transition={{ type: "spring", stiffness: 400 }}
+            >
+              <div className="w-7 h-7 bg-white rounded flex items-center justify-center">
+                <span className="text-black font-bold text-sm">A</span>
+              </div>
+              <Link to="/landing-new">Ahlan.</Link>
+            </motion.div>
+            
+            {/* Back to Home */}
+            <Link 
+              to="/landing-new"
+              className="text-base font-medium transition-colors duration-200"
+              style={{
+                background: 'linear-gradient(135deg, #e0e0e0 0%, #ffffff 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text'
+              }}
+            >
+              Back to Home
+            </Link>
+          </div>
         </div>
       </motion.nav>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-6 py-12">
-        <div className="grid lg:grid-cols-2 gap-12 items-center min-h-[calc(100vh-120px)]">
+      <div className="relative z-10 max-w-7xl mx-auto px-6 py-12 pt-32">
+        <div className="grid lg:grid-cols-2 gap-12 items-center min-h-[calc(100vh-200px)]">
           {/* Left Side - Features */}
           <motion.div
             className="space-y-8"
@@ -230,8 +254,14 @@ const Auth = () => {
                 variants={fadeInUp}
                 initial="initial"
                 animate="animate"
+                style={{
+                  background: 'linear-gradient(135deg, #ffffff 0%, rgb(84, 84, 84) 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text'
+                }}
               >
-                Welcome to the Future of <span className="text-green-400">Student Finance</span>
+                Welcome to the Future of <span style={{ color: '#9fd1b5' }}>Student Finance</span>
               </motion.h1>
               <motion.p 
                 className="text-xl text-gray-300 mb-8"
@@ -249,14 +279,14 @@ const Auth = () => {
               {features.map((feature, index) => (
                 <motion.div
                   key={index}
-                  className="flex items-start space-x-4 p-4 bg-gray-900/30 rounded-xl backdrop-blur-sm border border-gray-700/30"
+                  className="flex items-start space-x-4 p-4 bg-gray-800/30 rounded-xl backdrop-blur-sm border border-gray-700/30"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: 0.3 + index * 0.1 }}
                   whileHover={{ scale: 1.02, backgroundColor: "rgba(31, 41, 55, 0.5)" }}
                 >
-                  <div className="p-2 bg-green-600/20 rounded-lg">
-                    <feature.icon className="h-6 w-6 text-green-400" />
+                  <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(159, 209, 181, 0.2)' }}>
+                    <feature.icon className="h-6 w-6" style={{ color: '#9fd1b5' }} />
                   </div>
                   <div>
                     <h3 className="font-semibold text-white mb-1">{feature.title}</h3>
@@ -268,18 +298,27 @@ const Auth = () => {
 
             {/* Social Proof */}
             <motion.div
-              className="flex items-center space-x-6 pt-4"
+              className="flex items-center justify-center space-x-6 pt-4"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.8 }}
             >
               <div className="flex -space-x-2">
-                {[1, 2, 3, 4, 5].map(i => (
+                {[
+                  "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
+                  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
+                  "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
+                  "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face"
+                ].map((imageUrl, i) => (
                   <div 
                     key={i} 
-                    className="w-10 h-10 rounded-full border-2 border-gray-700 bg-gradient-to-r from-green-400 to-green-600 flex items-center justify-center text-white text-xs font-bold"
+                    className="w-10 h-10 rounded-full border-2 border-gray-700 overflow-hidden"
                   >
-                    ★
+                    <img 
+                      src={imageUrl} 
+                      alt={`User ${i + 1}`}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                 ))}
               </div>
@@ -297,16 +336,17 @@ const Auth = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.3 }}
           >
-            <div className="bg-gray-900/50 rounded-2xl p-8 backdrop-blur-sm border border-gray-700/50 shadow-2xl">
+            <div className="bg-gray-800/30 rounded-2xl p-8 backdrop-blur-sm border border-gray-700/50 shadow-2xl">
               {/* Toggle */}
-              <div className="flex bg-gray-800 rounded-lg p-1 mb-8">
+              <div className="flex bg-gray-800/50 rounded-lg p-1 mb-8">
                 <button
                   onClick={() => setActiveTab("login")}
                   className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
                     activeTab === "login" 
-                      ? 'bg-green-600 text-white shadow-lg' 
+                      ? 'text-black shadow-lg' 
                       : 'text-gray-400 hover:text-white'
                   }`}
+                  style={activeTab === "login" ? { backgroundColor: '#9fd1b5' } : {}}
                 >
                   Sign In
                 </button>
@@ -314,9 +354,10 @@ const Auth = () => {
                   onClick={() => setActiveTab("register")}
                   className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
                     activeTab === "register" 
-                      ? 'bg-green-600 text-white shadow-lg' 
+                      ? 'text-white shadow-lg' 
                       : 'text-gray-400 hover:text-white'
                   }`}
+                  style={activeTab === "register" ? { backgroundColor: '#9fd1b5' } : {}}
                 >
                   Sign Up
                 </button>
@@ -357,7 +398,8 @@ const Auth = () => {
                             required={activeTab === "register"}
                             value={formData.firstName}
                             onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
-                            className="pl-10 bg-gray-800 border-gray-600 text-white focus:border-green-500"
+                            className="pl-10 bg-gray-800/50 border-gray-600 text-white focus:border-green-500"
+                            style={{ '--tw-ring-color': '#9fd1b5' } as any}
                             placeholder="John"
                           />
                         </div>
@@ -370,7 +412,8 @@ const Auth = () => {
                           required={activeTab === "register"}
                           value={formData.lastName}
                           onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
-                          className="bg-gray-800 border-gray-600 text-white focus:border-green-500"
+                          className="bg-gray-800/50 border-gray-600 text-white focus:border-green-500"
+                          style={{ '--tw-ring-color': '#9fd1b5' } as any}
                           placeholder="Doe"
                         />
                       </div>
@@ -387,7 +430,8 @@ const Auth = () => {
                         required
                         value={formData.email}
                         onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                        className="pl-10 bg-gray-800 border-gray-600 text-white focus:border-green-500"
+                        className="pl-10 bg-gray-800/50 border-gray-600 text-white"
+                        style={{ '--tw-ring-color': '#9fd1b5' } as any}
                         placeholder="john@example.com"
                       />
                     </div>
@@ -403,7 +447,8 @@ const Auth = () => {
                         required
                         value={formData.password}
                         onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                        className="pl-10 pr-10 bg-gray-800 border-gray-600 text-white focus:border-green-500"
+                        className="pl-10 pr-10 bg-gray-800/50 border-gray-600 text-white"
+                        style={{ '--tw-ring-color': '#9fd1b5' } as any}
                         placeholder="••••••••"
                       />
                       <button
@@ -427,7 +472,8 @@ const Auth = () => {
                           required={activeTab === "register"}
                           value={formData.confirmPassword}
                           onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                          className="pl-10 bg-gray-800 border-gray-600 text-white focus:border-green-500"
+                          className="pl-10 bg-gray-800/50 border-gray-600 text-white"
+                          style={{ '--tw-ring-color': '#9fd1b5' } as any}
                           placeholder="••••••••"
                         />
                       </div>
@@ -439,11 +485,12 @@ const Auth = () => {
                       <label className="flex items-center">
                         <input 
                           type="checkbox" 
-                          className="rounded border-gray-600 bg-gray-800 text-green-600 focus:ring-green-500" 
+                          className="rounded border-gray-600 bg-gray-800/50 focus:ring-2"
+                          style={{ accentColor: '#9fd1b5' }}
                         />
                         <span className="ml-2 text-sm text-gray-300">Remember me</span>
                       </label>
-                      <button type="button" className="text-sm text-green-400 hover:text-green-300">
+                      <button type="button" className="text-sm hover:text-green-300 transition-colors" style={{ color: '#9fd1b5' }}>
                         Forgot password?
                       </button>
                     </div>
@@ -452,7 +499,8 @@ const Auth = () => {
                   <Button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full bg-green-600 hover:bg-green-500 text-white py-3 text-base font-medium relative overflow-hidden group"
+                    className="w-full text-black py-3 text-base font-medium relative overflow-hidden group transition-all duration-300 hover:shadow-xl"
+                    style={{ backgroundColor: '#9fd1b5' }}
                   >
                     <span className="relative z-10 flex items-center justify-center">
                       {isLoading ? (
@@ -464,15 +512,14 @@ const Auth = () => {
                         </>
                       )}
                     </span>
-                    <div className="absolute inset-0 bg-gradient-to-r from-green-600 to-green-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </Button>
 
                   {activeTab === "register" && (
                     <p className="text-xs text-gray-400 text-center">
                       By creating an account, you agree to our{' '}
-                      <a href="#" className="text-green-400 hover:text-green-300">Terms of Service</a>
+                      <a href="#" className="hover:text-green-300 transition-colors" style={{ color: '#9fd1b5' }}>Terms of Service</a>
                       {' '}and{' '}
-                      <a href="#" className="text-green-400 hover:text-green-300">Privacy Policy</a>
+                      <a href="#" className="hover:text-green-300 transition-colors" style={{ color: '#9fd1b5' }}>Privacy Policy</a>
                     </p>
                   )}
                 </motion.form>

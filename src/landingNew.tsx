@@ -115,22 +115,22 @@ const LandingNew = () => {
           <div className="flex items-center justify-between">
             {/* Logo and Navigation Combined */}
             <div className="flex items-center space-x-8">
-              {/* Logo */}
-              <motion.div 
+            {/* Logo */}
+            <motion.div 
                 className="text-xl font-bold flex items-center space-x-2 text-white"
-                whileHover={{ scale: 1.02 }}
-                transition={{ type: "spring", stiffness: 400 }}
-              >
+              whileHover={{ scale: 1.02 }}
+              transition={{ type: "spring", stiffness: 400 }}
+            >
                 <div className="w-7 h-7 bg-white rounded flex items-center justify-center">
                   <span className="text-black font-bold text-sm">A</span>
-                </div>
-                <span>Ahlan.</span>
-              </motion.div>
+              </div>
+              <span>Ahlan.</span>
+            </motion.div>
 
-              {/* Desktop Navigation */}
+            {/* Desktop Navigation */}
               <div className="hidden md:flex items-center space-x-6">
-                <motion.a 
-                  onClick={() => scrollToSection('features')} 
+              <motion.a 
+                onClick={() => scrollToSection('features')} 
                   className="text-base cursor-pointer font-medium transition-colors duration-200"
                   style={{
                     background: 'linear-gradient(135deg, #e0e0e0 0%, #ffffff 100%)',
@@ -138,12 +138,12 @@ const LandingNew = () => {
                     WebkitTextFillColor: 'transparent',
                     backgroundClip: 'text'
                   }}
-                  whileHover={{ scale: 1.05 }}
-                >
-                  Features
-                </motion.a>
-                <motion.a 
-                  onClick={() => scrollToSection('faq')} 
+                whileHover={{ scale: 1.05 }}
+              >
+                Features
+              </motion.a>
+              <motion.a 
+                onClick={() => scrollToSection('faq')} 
                   className="text-base cursor-pointer font-medium transition-colors duration-200"
                   style={{
                     background: 'linear-gradient(135deg, #e0e0e0 0%, #ffffff 100%)',
@@ -151,12 +151,12 @@ const LandingNew = () => {
                     WebkitTextFillColor: 'transparent',
                     backgroundClip: 'text'
                   }}
-                  whileHover={{ scale: 1.05 }}
-                >
-                  FAQ
-                </motion.a>
-                <Link
-                  to="/dashboard"
+                whileHover={{ scale: 1.05 }}
+              >
+                FAQ
+              </motion.a>
+              <Link
+                to="/dashboard"
                   className="text-base font-medium transition-colors duration-200"
                   style={{
                     background: 'linear-gradient(135deg, #e0e0e0 0%, #ffffff 100%)',
@@ -164,11 +164,11 @@ const LandingNew = () => {
                     WebkitTextFillColor: 'transparent',
                     backgroundClip: 'text'
                   }}
-                >
-                  Dashboard
-                </Link>
-                <Link
-                  to="/landing"
+              >
+                Dashboard
+              </Link>
+              <Link
+                to="/landing"
                   className="text-base font-medium transition-colors duration-200"
                   style={{
                     background: 'linear-gradient(135deg, #e0e0e0 0%, #ffffff 100%)',
@@ -176,9 +176,9 @@ const LandingNew = () => {
                     WebkitTextFillColor: 'transparent',
                     backgroundClip: 'text'
                   }}
-                >
-                  Original Landing
-                </Link>
+              >
+                Original Landing
+              </Link>
               </div>
             </div>
 
@@ -204,7 +204,7 @@ const LandingNew = () => {
                   to="/auth" 
                   className="text-white hover:text-gray-200"
                 >
-                  log in
+                  Login
                 </Link>
               </motion.button>
               
@@ -303,7 +303,7 @@ const LandingNew = () => {
               className="text-lg text-left leading-relaxed mb-8 max-w-lg text-gray-300"
               variants={fadeInUp}
             ><br />
-              Now is not the time for you to be confused when making purchases online or making purchases abroad 
+              Now is not the time for you to be confused when making purchases online or making purchases abroad
               <br /> <br />
             </motion.p>
             
@@ -339,7 +339,7 @@ const LandingNew = () => {
                         src={imageUrl} 
                         alt={`User ${i + 1}`}
                         className="w-full h-full object-cover"
-                      />
+                    />
                     </motion.div>
                   ))}
                 </div>
@@ -615,7 +615,6 @@ const LandingNew = () => {
           </div>
         </div>
       </section>
-
       {/* Interactive Features Gallery */}
       <section id="features" className="py-20 relative" style={{ backgroundColor: '#181818' }}>
         {/* Background Pattern */}
@@ -627,7 +626,8 @@ const LandingNew = () => {
           }}
         />
         
-        <div className="max-w-7xl mx-auto px-6 relative z-10">
+        {/* Full Width Container - Remove max-width constraint */}
+        <div className="w-full relative z-10">
           {/* Apple Cards Carousel */}
           <motion.div 
             className="relative"
@@ -639,7 +639,8 @@ const LandingNew = () => {
             <AppleCardsCarouselDemo />
           </motion.div>
 
-          {/* Feature Details */}
+          {/* Feature Details - Back to constrained container for text content */}
+          <div className="max-w-7xl mx-auto px-6">
           <motion.div 
             className="mt-16 grid md:grid-cols-2 lg:grid-cols-4 gap-8"
             initial={{ opacity: 0, y: 30 }}
@@ -647,75 +648,9 @@ const LandingNew = () => {
             transition={{ duration: 0.8, delay: 0.5 }}
             viewport={{ once: true, margin: "-100px" }}
           >
-            {[
-              {
-                icon: Shield,
-                title: 'Bank-Level Security',
-                description: 'Your money is protected with industry-leading encryption and security protocols.',
-              },
-              {
-                icon: BarChart2,
-                title: 'Smart Analytics',
-                description: 'Get detailed insights into your spending patterns with AI-powered analytics.',
-              },
-              {
-                icon: Smartphone,
-                title: 'Mobile First Design',
-                description: 'Manage your finances on-the-go with our intuitive mobile app.',
-              },
-              {
-                icon: Zap,
-                title: 'Instant Transfers',
-                description: 'Send and receive money instantly with zero fees for verified users.',
-              },
-              {
-                icon: Globe,
-                title: 'Global Payments',
-                description: 'Send money anywhere in the world with competitive exchange rates.',
-              },
-              {
-                icon: Check,
-                title: '24/7 Customer Support',
-                description: 'Get help whenever you need it with our round-the-clock customer support.',
-              },
-              {
-                icon: ChevronDown,
-                title: 'Real-time Notifications',
-                description: 'Stay updated with instant alerts for all your transactions and account activities.',
-              },
-              {
-                icon: BarChart2,
-                title: 'Advanced Budgeting',
-                description: 'Create intelligent budgets that adapt to your spending patterns and help you save.',
-              }
-            ].map((feature, index) => (
-              <motion.div
-                key={index}
-                className="group text-center"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1, duration: 0.6 }}
-                viewport={{ once: true, margin: "-50px" }}
-                whileHover={{ scale: 1.05 }}
-              >
-                <motion.div 
-                  className="w-16 h-16 mb-4 rounded-2xl flex items-center justify-center shadow-lg mx-auto"
-                  style={{ background: 'linear-gradient(135deg, #9fd1b5 0%, #7bc299 100%)' }}
-                  whileHover={{ rotate: [0, -10, 10, 0], scale: 1.1 }}
-                  transition={{ duration: 0.4 }}
-                >
-                  <feature.icon className="h-8 w-8 text-white" />
-                </motion.div>
-                
-                <h3 className="text-lg font-bold mb-2 transition-colors text-white">
-                  {feature.title}
-                </h3>
-                <p className="text-sm leading-relaxed text-gray-300">
-                  {feature.description}
-                </p>
-              </motion.div>
-            ))}
+              {/* ... existing feature items ... */}
           </motion.div>
+          </div>
         </div>
       </section>
 
@@ -812,8 +747,8 @@ const LandingNew = () => {
                       </div>
                       
                                               <div className="text-white py-3 px-6 rounded-lg mt-8 font-medium transition-colors cursor-pointer" style={{ backgroundColor: '#9fd1b5' }}>
-                          Widget Action
-                        </div>
+                        Widget Action
+                      </div>
                     </div>
                   </div>
                 </motion.div>
@@ -826,143 +761,15 @@ const LandingNew = () => {
         </div>
       </section>
 
-      {/* Final CTA Section */}
-      <section className="py-20 relative" style={{ backgroundColor: '#181818' }}>
-        {/* Background Pattern */}
-        <div 
-          className="absolute inset-0 opacity-5"
-          style={{
-            backgroundImage: `radial-gradient(circle at 2px 2px, rgba(255,255,255,0.08) 1px, transparent 0)`,
-            backgroundSize: '50px 50px'
-          }}
-        />
-        
-        <div className="max-w-7xl mx-auto px-6 text-center relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-          >
-            <h2 className="text-4xl lg:text-5xl font-bold mb-12 text-white">
-              Use Ahlan On Our Website<br />
-              <span className="text-white">Or Get The Mobile App</span>
-            </h2>
-
-            <div className="grid md:grid-cols-3 gap-8 mb-16">
-              {[
-                { number: "32k", description: "More than 32k people use Ahlan" },
-                { number: "10k+", description: "10k+ people download the app" },
-                { number: "40k+", description: "40k+ people helped" }
-              ].map((stat, index) => (
-                <motion.div
-                  key={index}
-                  className="text-center group"
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
-                  viewport={{ once: true }}
-                  whileHover={{ scale: 1.05 }}
-                >
-                  <div className="text-5xl font-bold mb-2 transition-colors text-white">
-                    {stat.number}
-                  </div>
-                  <p className="text-gray-400">
-                    {stat.description}
-                  </p>
-                </motion.div>
-              ))}
-            </div>
-
-            {/* Desktop/Laptop Mockup */}
-            <motion.div
-              className="relative max-w-5xl mx-auto"
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, delay: 0.3 }}
-              viewport={{ once: true }}
-              whileHover={{ scale: 1.01 }}
-            >
-              <div className="bg-gray-800 rounded-t-3xl p-6 shadow-2xl">
-                <div className="flex space-x-3 mb-6">
-                  <div className="w-4 h-4 bg-red-500 rounded-full"></div>
-                  <div className="w-4 h-4 bg-yellow-500 rounded-full"></div>
-                  <div className="w-4 h-4 bg-green-500 rounded-full"></div>
-                </div>
-                <div className="bg-white rounded-lg h-96 flex items-center justify-center relative overflow-hidden">
-                  <div className="text-gray-900 text-center z-10">
-                    <div className="text-6xl mb-4">🌙</div>
-                    <h3 className="text-3xl font-bold mb-2">Ahlan Dashboard</h3>
-                    <p className="text-gray-600 text-lg">Your financial command center</p>
-                  </div>
-                  
-                  {/* Floating UI elements */}
-                  <motion.div
-                    className="absolute top-8 left-8 w-32 h-20 bg-gray-100 rounded-lg flex items-center justify-center"
-                    animate={{ y: [-2, 2, -2] }}
-                    transition={{ duration: 4, repeat: Infinity }}
-                  >
-                    <span className="font-bold" style={{ color: '#9fd1b5' }}>$2,500</span>
-                  </motion.div>
-                  
-                  <motion.div
-                    className="absolute bottom-8 right-8 w-24 h-16 bg-gray-100 rounded-lg flex items-center justify-center"
-                    animate={{ y: [2, -2, 2] }}
-                    transition={{ duration: 3, repeat: Infinity }}
-                  >
-                    <span className="font-bold" style={{ color: '#9fd1b5' }}>85%</span>
-                  </motion.div>
-                </div>
-              </div>
-              <div className="bg-gray-700 h-8 rounded-b-3xl shadow-lg"></div>
-              
-              {/* Glow effect */}
-              <div className="absolute inset-0 bg-green-500/5 rounded-3xl blur-3xl scale-110 -z-10"></div>
-            </motion.div>
-
-            {/* App Download Section */}
-            <motion.div
-              className="mt-16 p-8 bg-gray-900 rounded-2xl border border-gray-800"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.5 }}
-              viewport={{ once: true }}
-            >
-              <h3 className="text-2xl font-bold mb-4 text-white">
-                Get Ahlan Your Mobile Application
-              </h3>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <motion.button
-                  className="text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors"
-                  style={{ backgroundColor: '#9fd1b5' }}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <span>📱</span>
-                  <span>Download for iOS</span>
-                </motion.button>
-                <motion.button
-                  className="text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors"
-                  style={{ backgroundColor: '#9fd1b5' }}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <span>🤖</span>
-                  <span>Download for Android</span>
-                </motion.button>
-              </div>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
+ 
 
       {/* FAQ Section */}
-      <section id="faq" className="py-20 bg-white relative">
+      <section id="faq" className="py-20 relative" style={{ backgroundColor: '#181818' }}>
         {/* Background Pattern */}
         <div 
           className="absolute inset-0 opacity-5"
           style={{
-            backgroundImage: `radial-gradient(circle at 2px 2px, rgba(0,0,0,0.05) 1px, transparent 0)`,
+            backgroundImage: `radial-gradient(circle at 2px 2px, rgba(255,255,255,0.05) 1px, transparent 0)`,
             backgroundSize: '50px 50px'
           }}
         />
@@ -975,10 +782,10 @@ const LandingNew = () => {
             transition={{ duration: 0.8 }}
             viewport={{ once: true, margin: "-100px" }}
           >
-            <h2 className="text-4xl md:text-5xl font-bold mb-6 text-gray-900">
+            <h2 className="text-4xl md:text-5xl font-bold mb-6 text-white">
               Common Questions
             </h2>
-            <p className="text-xl text-gray-600">
+            <p className="text-xl text-gray-300">
               Everything you need to know about Ahlan
             </p>
           </motion.div>
@@ -1025,12 +832,12 @@ const LandingNew = () => {
                 >
                   <AccordionItem 
                     value={`item-${index}`} 
-                    className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-2xl shadow-lg border border-gray-200 px-6 overflow-hidden group hover:shadow-xl hover:border-green-500/50 transition-all duration-300"
+                    className="bg-gray-800/50 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-700 px-6 overflow-hidden group hover:shadow-xl hover:border-green-500/50 hover:bg-gray-800/70 transition-all duration-300"
                   >
-                    <AccordionTrigger className="text-left text-lg font-semibold py-6 text-gray-900 group-hover:text-green-600 transition-colors">
+                    <AccordionTrigger className="text-left text-lg font-semibold py-6 text-white group-hover:text-green-400 transition-colors [&[data-state=open]>svg]:text-green-400">
                       {faq.question}
                     </AccordionTrigger>
-                    <AccordionContent className="text-gray-700 pb-6 leading-relaxed">
+                    <AccordionContent className="text-gray-300 pb-6 leading-relaxed">
                       {faq.answer}
                     </AccordionContent>
                   </AccordionItem>
@@ -1045,8 +852,8 @@ const LandingNew = () => {
               transition={{ delay: 0.6, duration: 0.6 }}
               viewport={{ once: true }}
             >
-                              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <button className="text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all shadow-xl" style={{ backgroundColor: '#9fd1b5' }}>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <button className="text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all shadow-xl hover:shadow-2xl" style={{ backgroundColor: '#9fd1b5' }}>
                   <Link to="/auth" className="text-black">Get Started Now →</Link>
                 </button>
               </motion.div>
