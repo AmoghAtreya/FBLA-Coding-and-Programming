@@ -23,24 +23,24 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
       )}
       <div
         className={cn(
-          "max-w-xs rounded-lg px-4 py-2 text-sm backdrop-blur-sm",
+          "max-w-xs rounded-lg px-4 py-2 text-sm",
           message.sender === 'user'
-            ? "text-black border border-gray-600/30"
-            : "bg-gray-800/50 text-gray-200 border border-gray-700/50"
+            ? "text-black border border-gray-300"
+            : "bg-gray-100 text-gray-700 border border-gray-300"
         )}
         style={message.sender === 'user' ? { backgroundColor: '#9fd1b5' } : {}}
       >
         <p className="leading-relaxed">{message.content}</p>
         <span className={cn(
           "text-xs block mt-1",
-          message.sender === 'user' ? "text-black/70" : "text-gray-400"
+          message.sender === 'user' ? "text-black/70" : "text-gray-500"
         )}>
           {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </span>
       </div>
       {message.sender === 'user' && (
         <Avatar className="h-8 w-8 ml-2 mt-1">
-          <AvatarFallback className="bg-gray-700 text-white border border-gray-600">U</AvatarFallback>
+          <AvatarFallback className="bg-gray-300 text-gray-700 border border-gray-400">U</AvatarFallback>
         </Avatar>
       )}
     </div>

@@ -60,12 +60,12 @@ const ChatBot: React.FC = () => {
       
       <Card
         className={cn(
-          "fixed bottom-24 md:bottom-28 right-6 w-80 md:w-96 shadow-2xl rounded-xl overflow-hidden transition-all duration-300 transform z-40 chat-window border border-gray-700/50 backdrop-blur-sm",
+          "fixed bottom-24 md:bottom-28 right-6 w-80 md:w-96 shadow-2xl rounded-xl overflow-hidden transition-all duration-300 transform z-40 chat-window border border-gray-200 backdrop-blur-sm",
           isOpen ? "scale-100 opacity-100" : "scale-90 opacity-0 pointer-events-none"
         )}
-        style={{ backgroundColor: '#1a1a1a' }}
+        style={{ backgroundColor: '#ffffff' }}
       >
-        <div className="text-white p-4 border-b border-gray-700/50" style={{ backgroundColor: '#9fd1b5' }}>
+        <div className="text-white p-4 border-b border-gray-200" style={{ backgroundColor: '#9fd1b5' }}>
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center border-2 border-black">
               <span className="text-black font-bold text-sm">A</span>
@@ -79,10 +79,10 @@ const ChatBot: React.FC = () => {
           </div>
         </div>
         
-        <div className="h-96 overflow-y-auto p-4" style={{ backgroundColor: '#181818' }}>
+        <div className="h-96 overflow-y-auto p-4" style={{ backgroundColor: '#ffffff' }}>
           <div className="space-y-4">
             {messages.length === 0 && (
-              <div className="text-center text-gray-400 py-8">
+              <div className="text-center text-gray-600 py-8">
                 <MessageCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
                 <p className="text-sm">Hi! I'm your Armo. assistant.</p>
                 <p className="text-xs mt-1">Ask me anything about managing your finances!</p>
@@ -98,7 +98,7 @@ const ChatBot: React.FC = () => {
                 <Avatar className="h-8 w-8 mr-2">
                   <AvatarFallback className="text-white" style={{ backgroundColor: '#9fd1b5' }}>A</AvatarFallback>
                 </Avatar>
-                <div className="bg-gray-800/50 text-gray-200 border border-gray-700/50 rounded-lg px-4 py-2 flex items-center space-x-1 backdrop-blur-sm">
+                <div className="bg-gray-100 text-gray-600 border border-gray-300 rounded-lg px-4 py-2 flex items-center space-x-1">
                   <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: '#9fd1b5', animationDelay: '0ms' }}></div>
                   <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: '#9fd1b5', animationDelay: '150ms' }}></div>
                   <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: '#9fd1b5', animationDelay: '300ms' }}></div>
@@ -110,13 +110,13 @@ const ChatBot: React.FC = () => {
           </div>
         </div>
         
-        <div className="p-3 border-t border-gray-700/50 flex chat-input" style={{ backgroundColor: '#1a1a1a' }}>
+        <div className="p-3 border-t border-gray-200 flex chat-input" style={{ backgroundColor: '#ffffff' }}>
           <Input
             placeholder="Ask about budgeting, savings, or any financial question..."
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
-            className="flex-1 mr-2 bg-gray-800/50 text-white border border-gray-600/50 placeholder-gray-400 focus:border-gray-500 focus:ring-1 backdrop-blur-sm"
+            className="flex-1 mr-2 bg-gray-50 text-gray-900 border border-gray-300 placeholder-gray-500 focus:border-gray-400 focus:ring-1"
             style={{ '--tw-ring-color': '#9fd1b5' } as any}
           />
           <Button

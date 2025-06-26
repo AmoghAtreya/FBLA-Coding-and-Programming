@@ -13,8 +13,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAccounts } from '@/context/AccountContext';
+import { useLocation } from 'react-router-dom';
 import Layout from '@/components/Layout';
-import { Plus, Wallet, CreditCard, PiggyBank, MoreVertical, Trash2, Edit, Eye } from 'lucide-react';
+import { Plus, Wallet, CreditCard, PiggyBank, MoreVertical, Trash2, Edit, Eye, User, Building } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -49,6 +50,8 @@ const Accounts = () => {
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
   const [accountToDelete, setAccountToDelete] = useState<string | null>(null);
   const { toast } = useToast();
+  const location = useLocation();
+  const [activeCardType, setActiveCardType] = useState<'personal' | 'business' | 'all'>('all');
   
   // Stripe-related state
   const [stripeAccounts, setStripeAccounts] = useState<StripeAccount[]>([]);
@@ -74,6 +77,15 @@ const Accounts = () => {
   const [newAccountBalance, setNewAccountBalance] = useState('');
 
   const totalBalance = accounts.reduce((sum, account) => sum + account.balance, 0);
+
+  // Handle URL parameters for card type
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const type = searchParams.get('type');
+    if (type === 'personal' || type === 'business') {
+      setActiveCardType(type);
+    }
+  }, [location.search]);
 
   // Load Stripe accounts on component mount
   useEffect(() => {
@@ -229,6 +241,16 @@ const Accounts = () => {
   const checkingAccounts = accounts.filter(account => account.type === 'checking');
   const savingsAccounts = accounts.filter(account => account.type === 'savings');
 
+  // Filter cards based on active tab
+  const filteredStripeAccounts = stripeAccounts.filter(card => {
+    if (activeCardType === 'personal') {
+      return card.name?.toLowerCase().includes('personal') || !card.name?.toLowerCase().includes('business');
+    } else if (activeCardType === 'business') {
+      return card.name?.toLowerCase().includes('business');
+    }
+    return true; // Show all for 'all' tab
+  });
+
   if (isLoading) {
     return (
       <Layout>
@@ -364,6 +386,43 @@ const Accounts = () => {
           </Sheet>
         </div>
 
+        {/* Card Type Tabs */}
+        <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
+          <button
+            onClick={() => setActiveCardType('all')}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeCardType === 'all'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <CreditCard className="h-4 w-4" />
+            <span>All Cards</span>
+          </button>
+          <button
+            onClick={() => setActiveCardType('personal')}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeCardType === 'personal'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <User className="h-4 w-4" />
+            <span>Personal Card</span>
+          </button>
+          <button
+            onClick={() => setActiveCardType('business')}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeCardType === 'business'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <Building className="h-4 w-4" />
+            <span>Business Card</span>
+          </button>
+        </div>
+
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card className="bg-white border-0 shadow-sm">
@@ -467,14 +526,22 @@ const Accounts = () => {
             <div className="flex justify-center items-center h-32">
               <div className="h-8 w-8 rounded-full border-4 border-t-blue-500 border-gray-300 animate-spin"></div>
             </div>
-          ) : stripeAccounts.length === 0 ? (
+          ) : filteredStripeAccounts.length === 0 ? (
             <Card className="bg-white border-0 shadow-sm">
               <CardContent className="p-12 text-center">
                 <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <CreditCard className="h-8 w-8 text-blue-500" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No credit cards added</h3>
-                <p className="text-gray-500 mb-4">Add a credit card to start making secure payments with Stripe.</p>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  {activeCardType === 'all' ? 'No credit cards added' : 
+                   activeCardType === 'personal' ? 'No personal cards found' : 
+                   'No business cards found'}
+                </h3>
+                <p className="text-gray-500 mb-4">
+                  {activeCardType === 'all' ? 'Add a credit card to start making secure payments with Stripe.' :
+                   activeCardType === 'personal' ? 'Add a personal credit card or switch to view all cards.' :
+                   'Add a business credit card or switch to view all cards.'}
+                </p>
                 <Button 
                   className="bg-blue-600 hover:bg-blue-700 text-white"
                   onClick={() => setShowAddCreditCard(true)}
@@ -486,7 +553,7 @@ const Accounts = () => {
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {stripeAccounts.map((card) => (
+              {filteredStripeAccounts.map((card) => (
                 <motion.div
                   key={card.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -498,10 +565,15 @@ const Accounts = () => {
                       <div className="flex justify-between items-start mb-6">
                         <div className="flex items-center space-x-2">
                           <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-                            <CreditCard className="h-4 w-4" />
+                            {card.name?.toLowerCase().includes('business') ? 
+                              <Building className="h-4 w-4" /> : 
+                              <User className="h-4 w-4" />
+                            }
                           </div>
                           <div>
-                            <p className="text-sm opacity-90">Credit Card</p>
+                            <p className="text-sm opacity-90">
+                              {card.name?.toLowerCase().includes('business') ? 'Business Card' : 'Personal Card'}
+                            </p>
                             <p className="text-xs opacity-70">Stripe Powered</p>
                           </div>
                         </div>

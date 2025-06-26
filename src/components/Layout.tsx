@@ -36,6 +36,7 @@ import {
   Menu,
   X,
   User,
+  Building,
   HelpCircle,
   Moon,
   Sun
@@ -253,12 +254,21 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   transition={{ duration: 0.2 }}
                 >
                   {item.submenu.map((subItem) => (
-                    <div
+                    <button
                       key={subItem}
-                      className="text-gray-400 text-sm py-2 px-3 hover:text-gray-200 cursor-pointer rounded-lg hover:bg-gray-800/30 transition-colors"
+                      onClick={() => {
+                        if (subItem === 'Personal card') {
+                          navigate('/accounts?type=personal');
+                        } else if (subItem === 'Business card') {
+                          navigate('/accounts?type=business');
+                        }
+                      }}
+                      className="flex items-center space-x-2 text-gray-400 text-sm py-2 px-3 hover:text-gray-200 cursor-pointer rounded-lg hover:bg-gray-800/30 transition-colors w-full text-left"
                     >
-                      {subItem}
-                    </div>
+                      {subItem === 'Personal card' && <User className="h-4 w-4" />}
+                      {subItem === 'Business card' && <Building className="h-4 w-4" />}
+                      <span>{subItem}</span>
+                    </button>
                   ))}
                 </motion.div>
               )}
