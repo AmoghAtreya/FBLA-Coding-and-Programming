@@ -219,7 +219,7 @@ const Auth = () => {
               <div className="w-7 h-7 bg-white rounded flex items-center justify-center">
                 <span className="text-black font-bold text-sm">A</span>
               </div>
-              <Link to="/landing-new">Ahlan.</Link>
+              <Link to="/landing-new">Armo.</Link>
             </motion.div>
             
             {/* Back to Home */}
@@ -270,7 +270,7 @@ const Auth = () => {
                 animate="animate"
                 transition={{ delay: 0.1 }}
               >
-                Join thousands of students who are taking control of their financial future with Ahlan.
+                Join thousands of students who are taking control of their financial future with Armo.
               </motion.p>
             </div>
 

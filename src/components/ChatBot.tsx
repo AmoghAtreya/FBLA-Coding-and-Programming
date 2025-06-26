@@ -72,7 +72,7 @@ const ChatBot: React.FC = () => {
             </div>
             <div>
               <div className="text-left">
-                <h3 className="font-semibold text-base text-black">Ahlan Assistant</h3>
+                <h3 className="font-semibold text-base text-black">Armo. Assistant</h3>
                 <p className="text-xs text-black/80">Always here to help with your finances</p>
               </div>
             </div>
@@ -84,7 +84,7 @@ const ChatBot: React.FC = () => {
             {messages.length === 0 && (
               <div className="text-center text-gray-400 py-8">
                 <MessageCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p className="text-sm">Hi! I'm your Ahlan assistant.</p>
+                <p className="text-sm">Hi! I'm your Armo. assistant.</p>
                 <p className="text-xs mt-1">Ask me anything about managing your finances!</p>
               </div>
             )}

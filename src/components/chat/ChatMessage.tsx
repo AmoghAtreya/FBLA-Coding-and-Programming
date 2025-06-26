@@ -17,7 +17,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
     >
       {message.sender === 'bot' && (
         <Avatar className="h-8 w-8 mr-2 mt-1">
-          <AvatarImage src="/assets/bot-avatar.png" alt="Ahlan Assistant" />
+          <AvatarImage src="/assets/bot-avatar.png" alt="Armo. Assistant" />
           <AvatarFallback className="text-black" style={{ backgroundColor: '#9fd1b5' }}>A</AvatarFallback>
         </Avatar>
       )}

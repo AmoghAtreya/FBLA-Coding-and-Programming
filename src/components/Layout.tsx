@@ -187,7 +187,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   exit={{ opacity: 0, width: 0 }}
                   transition={{ duration: 0.2 }}
                 >
-                  Ahlan
+                  Armo.
                 </motion.span>
               )}
             </AnimatePresence>

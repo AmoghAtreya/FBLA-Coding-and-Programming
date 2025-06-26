@@ -70,7 +70,7 @@ const SecurityContent = () => (
     
     <div className="bg-green-900/20 border border-green-700 rounded-lg p-4">
       <p className="text-green-300 text-sm">
-        At Ahlan, we understand that trust is the foundation of financial services. That's why we've implemented enterprise-grade security measures that exceed industry standards. Our multi-layered approach combines advanced encryption, real-time fraud monitoring, and biometric authentication to ensure your money and personal information remain completely secure. Every transaction is protected by the same security protocols used by major banks, giving you peace of mind whether you're sending $5 or $5,000.
+        At Armo., we understand that trust is the foundation of financial services. That's why we've implemented enterprise-grade security measures that exceed industry standards. Our multi-layered approach combines advanced encryption, real-time fraud monitoring, and biometric authentication to ensure your money and personal information remain completely secure. Every transaction is protected by the same security protocols used by major banks, giving you peace of mind whether you're sending $5 or $5,000.
       </p>
     </div>
   </div>
@@ -124,7 +124,7 @@ const AnalyticsContent = () => (
     
     <div className="bg-blue-900/20 border border-blue-700 rounded-lg p-4">
       <p className="text-blue-300 text-sm">
-        Transform your financial data into actionable insights with Ahlan's powerful analytics engine. Our AI-driven platform automatically categorizes your spending, identifies patterns, and provides personalized recommendations to help you make smarter financial decisions. Whether you're tracking daily expenses, monitoring investment performance, or planning for major purchases, our intuitive dashboards and detailed reports give you the clarity you need to take control of your financial future.
+        Transform your financial data into actionable insights with Armo.'s powerful analytics engine. Our AI-driven platform automatically categorizes your spending, identifies patterns, and provides personalized recommendations to help you make smarter financial decisions. Whether you're tracking daily expenses, monitoring investment performance, or planning for major purchases, our intuitive dashboards and detailed reports give you the clarity you need to take control of your financial future.
       </p>
     </div>
   </div>
@@ -171,7 +171,7 @@ const MobileContent = () => (
     
     <div className="bg-purple-900/20 border border-purple-700 rounded-lg p-4">
       <p className="text-purple-300 text-sm">
-        In today's fast-paced world, your finances need to keep up with your lifestyle. Ahlan's mobile-first approach ensures that every feature is optimized for touch interfaces and on-the-go usage. Our native apps deliver blazing-fast performance while maintaining full functionality even when you're offline. With intuitive gestures, smart notifications, and seamless synchronization across all your devices, managing your money has never been more convenient or accessible.
+        In today's fast-paced world, your finances need to keep up with your lifestyle. Armo.'s mobile-first approach ensures that every feature is optimized for touch interfaces and on-the-go usage. Our native apps deliver blazing-fast performance while maintaining full functionality even when you're offline. With intuitive gestures, smart notifications, and seamless synchronization across all your devices, managing your money has never been more convenient or accessible.
       </p>
     </div>
   </div>
@@ -218,7 +218,7 @@ const TransfersContent = () => (
     
     <div className="bg-yellow-900/20 border border-yellow-700 rounded-lg p-4">
       <p className="text-yellow-300 text-sm">
-        Say goodbye to waiting days for transfers to clear. Ahlan's instant transfer technology leverages cutting-edge payment rails to move your money in real-time, 24 hours a day, 7 days a week. Whether you're splitting a dinner bill, paying rent, or sending money to family, our platform ensures your transfers arrive immediately without any fees for verified users. Simply enter a phone number or email address, and watch your money arrive instantly.
+        Say goodbye to waiting days for transfers to clear. Armo.'s instant transfer technology leverages cutting-edge payment rails to move your money in real-time, 24 hours a day, 7 days a week. Whether you're splitting a dinner bill, paying rent, or sending money to family, our platform ensures your transfers arrive immediately without any fees for verified users. Simply enter a phone number or email address, and watch your money arrive instantly.
       </p>
     </div>
   </div>
@@ -265,7 +265,7 @@ const GlobalContent = () => (
     
     <div className="bg-cyan-900/20 border border-cyan-700 rounded-lg p-4">
       <p className="text-cyan-300 text-sm">
-        Break down borders with Ahlan's global payment network that connects you to over 190 countries worldwide. Our platform offers competitive exchange rates that are up to 8 times cheaper than traditional banks, ensuring more of your money reaches its destination. Whether your recipient prefers cash pickup, bank deposit, or mobile wallet transfer, we provide flexible options that work best for their local preferences and infrastructure.
+        Break down borders with Armo.'s global payment network that connects you to over 190 countries worldwide. Our platform offers competitive exchange rates that are up to 8 times cheaper than traditional banks, ensuring more of your money reaches its destination. Whether your recipient prefers cash pickup, bank deposit, or mobile wallet transfer, we provide flexible options that work best for their local preferences and infrastructure.
       </p>
     </div>
   </div>
@@ -312,7 +312,7 @@ const BudgetingContent = () => (
     
     <div className="bg-pink-900/20 border border-pink-700 rounded-lg p-4">
       <p className="text-pink-300 text-sm">
-        Take control of your financial future with Ahlan's intelligent budgeting system that adapts to your spending patterns and lifestyle. Our AI-powered platform automatically categorizes expenses, identifies spending trends, and provides personalized recommendations to help you save more effectively. With flexible budget periods, proactive alerts, and smart goal-setting features, you'll develop healthy financial habits that last a lifetime.
+        Take control of your financial future with Armo.'s intelligent budgeting system that adapts to your spending patterns and lifestyle. Our AI-powered platform automatically categorizes expenses, identifies spending trends, and provides personalized recommendations to help you save more effectively. With flexible budget periods, proactive alerts, and smart goal-setting features, you'll develop healthy financial habits that last a lifetime.
       </p>
     </div>
   </div>
