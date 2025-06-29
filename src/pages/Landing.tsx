@@ -11,7 +11,8 @@ import {
   MessageSquare,
   ChevronDown,
   Check,
-  Bell
+  Bell,
+  BookOpen
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
@@ -557,14 +558,24 @@ const Landing = () => {
               transition={{ delay: 0.6, duration: 0.6 }}
               viewport={{ once: true }}
             >
-              <Link to="/faq">
-                <Button 
-                  variant="outline" 
-                  className="border-finflow-blue text-finflow-blue hover:bg-finflow-blue hover:text-white transition-colors px-8 py-6"
-                >
-                  View All FAQs <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link to="/faq">
+                  <Button 
+                    variant="outline" 
+                    className="border-finflow-blue text-finflow-blue hover:bg-finflow-blue hover:text-white transition-colors px-8 py-6"
+                  >
+                    View All FAQs <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+                <Link to="/instructions">
+                  <Button 
+                    className="bg-finflow-blue text-white hover:bg-blue-700 transition-colors px-8 py-6"
+                  >
+                    <BookOpen className="mr-2 h-4 w-4" />
+                    Instructions Guide
+                  </Button>
+                </Link>
+              </div>
             </motion.div>
           </motion.div>
         </div>

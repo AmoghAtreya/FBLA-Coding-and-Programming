@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -10,6 +9,8 @@ import { Transaction } from '@/types';
 import { format } from 'date-fns';
 import { Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
 
 interface TransactionModalProps {
   isOpen: boolean;
@@ -18,21 +19,85 @@ interface TransactionModalProps {
   mode: 'view' | 'edit';
 }
 
+interface Category {
+  id: string;
+  name: string;
+  type: 'income' | 'expense';
+  color: string;
+}
+
+interface FormData {
+  description?: string;
+  amount?: string; // Keep as string for form handling
+  type?: 'income' | 'expense';
+  category?: string;
+  account_name?: string;
+  channel?: string;
+  transaction_date?: string;
+}
+
+// Common categories that users might want to use
+const suggestedCategories = {
+  income: [
+    'Salary', 'Part-time Job', 'Freelance', 'Allowance', 'Scholarship', 'Grant', 'Investment', 'Gift', 'Side Hustle', 'Other Income'
+  ],
+  expense: [
+    'Food & Dining', 'Groceries', 'Transportation', 'Gas', 'Rent', 'Utilities', 'Entertainment', 'Shopping', 'Clothing', 'Healthcare', 'Education', 'Books', 'Subscription', 'Phone Bill', 'Internet', 'Insurance', 'Personal Care', 'Gym', 'Travel', 'Coffee', 'Other'
+  ]
+};
+
 const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, transaction, mode }) => {
   const { updateExistingTransaction, removeTransaction } = useTransactions();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState<Partial<Transaction>>({});
+  const [formData, setFormData] = useState<FormData>({});
+  const [categories, setCategories] = useState<Category[]>([]);
 
   useEffect(() => {
     if (transaction) {
       setFormData({
-        ...transaction,
-        amount: Math.abs(transaction.amount),
-        type: transaction.type || (transaction.amount >= 0 ? 'income' : 'expense'),
+        description: transaction.description || '',
+        amount: Math.abs(transaction.amount).toString(),
+        type: transaction.type || 'expense',
+        category: transaction.category || '',
+        account_name: transaction.account_name || '',
+        channel: transaction.channel || '',
+        transaction_date: transaction.transaction_date || transaction.date || '',
       });
     }
   }, [transaction]);
+
+  // Fetch user's existing categories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      if (!user) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('categories')
+          .select('id, name, type, color')
+          .eq('user_id', user.id)
+          .order('name', { ascending: true });
+
+        if (error) throw error;
+
+        if (data) {
+          const typedCategories: Category[] = data.map(cat => ({
+            ...cat,
+            type: cat.type as 'income' | 'expense'
+          }));
+          setCategories(typedCategories);
+        }
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      }
+    };
+
+    if (isOpen) {
+      fetchCategories();
+    }
+  }, [user, isOpen]);
 
   const handleChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -55,9 +120,35 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, tr
         ? -Math.abs(Number(formData.amount)) 
         : Math.abs(Number(formData.amount));
 
+      // Check if category exists, if not create it
+      const existingCategory = categories.find(cat => cat.name === formData.category && cat.type === formData.type);
+      let categoryId = existingCategory?.id;
+
+      if (formData.category && !existingCategory) {
+        try {
+          const { data: newCategoryData } = await supabase
+            .from('categories')
+            .insert({
+              name: formData.category,
+              type: formData.type || 'expense',
+              color: (formData.type || 'expense') === 'income' ? '#22c55e' : '#f97316',
+              user_id: user.id,
+            })
+            .select()
+            .single();
+          
+          if (newCategoryData) {
+            categoryId = newCategoryData.id;
+          }
+        } catch (categoryError) {
+          console.error('Error creating category:', categoryError);
+        }
+      }
+
       await updateExistingTransaction(transaction.id, { 
         ...formData,
         amount,
+        category_id: categoryId,
       });
       toast({
         title: "Success",
@@ -105,29 +196,16 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, tr
 
   const isViewOnly = mode === 'view';
 
-  const categories = formData.type === 'income' 
-    ? [
-        { value: 'Income', label: 'Income' },
-        { value: 'Salary', label: 'Salary' },
-        { value: 'Allowance', label: 'Allowance' },
-        { value: 'Gift', label: 'Gift' },
-        { value: 'Other', label: 'Other' },
-      ] 
-    : [
-        { value: 'Food and Drink', label: 'Food & Drink' },
-        { value: 'Travel', label: 'Travel' },
-        { value: 'Entertainment', label: 'Entertainment' },
-        { value: 'Shopping', label: 'Shopping' },
-        { value: 'Bills', label: 'Bills & Utilities' },
-        { value: 'Other', label: 'Other' },
-      ];
-
-  const channels = [
-    { value: 'Online', label: 'Online' },
-    { value: 'In Store', label: 'In Store' },
-    { value: 'Bank Transfer', label: 'Bank Transfer' },
-    { value: 'Cash', label: 'Cash' },
-  ];
+  // Filter categories by the selected transaction type
+  const filteredCategories = categories.filter(cat => cat.type === (formData.type || 'expense'));
+  
+  // Combine existing categories with suggested categories, removing duplicates
+  const allCategoryOptions = React.useMemo(() => {
+    const currentType = (formData.type || 'expense') as keyof typeof suggestedCategories;
+    const existingNames = filteredCategories.map(cat => cat.name);
+    const suggested = suggestedCategories[currentType].filter(name => !existingNames.includes(name));
+    return { existing: filteredCategories, suggested };
+  }, [filteredCategories, formData.type]);
 
   const formatDate = (dateString: string) => {
     try {
@@ -202,63 +280,125 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, tr
           
           <div className="space-y-2">
             <Label htmlFor="category">Category</Label>
-            <Select 
-              value={formData.category || ''} 
-              onValueChange={(value) => handleChange('category', value)}
-              disabled={mode === 'view' || isSubmitting}
-            >
-              <SelectTrigger id="category">
-                <SelectValue placeholder="Select category" />
-              </SelectTrigger>
-              <SelectContent>
-                {(formData.type === 'income' 
-                  ? [
-                      { value: 'Income', label: 'Income' },
-                      { value: 'Salary', label: 'Salary' },
-                      { value: 'Allowance', label: 'Allowance' },
-                      { value: 'Gift', label: 'Gift' },
-                      { value: 'Other', label: 'Other' },
-                    ] 
-                  : [
-                      { value: 'Food and Drink', label: 'Food & Drink' },
-                      { value: 'Travel', label: 'Travel' },
-                      { value: 'Entertainment', label: 'Entertainment' },
-                      { value: 'Shopping', label: 'Shopping' },
-                      { value: 'Bills', label: 'Bills & Utilities' },
-                      { value: 'Other', label: 'Other' },
-                    ]
-                ).map((category) => (
-                  <SelectItem key={category.value} value={category.value}>
-                    {category.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {isViewOnly ? (
+              <div className="bg-gray-50 p-2 rounded border">
+                {formData.category || 'No category'}
+              </div>
+            ) : (
+              <>
+                <Select 
+                  value={formData.category || ''} 
+                  onValueChange={(value) => handleChange('category', value)}
+                  disabled={isSubmitting}
+                >
+                  <SelectTrigger id="category">
+                    <SelectValue placeholder={`Select ${formData.type || 'expense'} category`} />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    {/* Show existing categories from database first */}
+                    {allCategoryOptions.existing.length > 0 && (
+                      <>
+                        <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide bg-gray-50 border-b">
+                          💼 Your Categories
+                        </div>
+                        {allCategoryOptions.existing.map((cat) => (
+                          <SelectItem key={cat.id} value={cat.name} className="py-2">
+                            <div className="flex items-center gap-3">
+                              <div 
+                                className="w-4 h-4 rounded-full flex-shrink-0 ring-1 ring-gray-200" 
+                                style={{ backgroundColor: cat.color }}
+                              />
+                              <span className="font-medium">{cat.name}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                        {allCategoryOptions.suggested.length > 0 && (
+                          <div className="border-t my-1" />
+                        )}
+                      </>
+                    )}
+                    
+                    {/* Show suggested categories */}
+                    {allCategoryOptions.suggested.length > 0 && (
+                      <>
+                        <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide bg-blue-50 border-b">
+                          ✨ Suggested Categories
+                        </div>
+                        {allCategoryOptions.suggested.map((categoryName) => (
+                          <SelectItem key={categoryName} value={categoryName} className="py-2">
+                            <div className="flex items-center gap-3">
+                              <div 
+                                className="w-4 h-4 rounded-full flex-shrink-0 ring-1 ring-gray-200" 
+                                style={{ backgroundColor: (formData.type || 'expense') === 'income' ? '#22c55e' : '#f97316' }}
+                              />
+                              <span>{categoryName}</span>
+                              <span className="ml-auto text-xs text-gray-400">New</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </>
+                    )}
+                    
+                    {/* Fallback if no categories */}
+                    {allCategoryOptions.existing.length === 0 && allCategoryOptions.suggested.length === 0 && (
+                      <SelectItem value="Other" className="py-2">
+                        <div className="flex items-center gap-3">
+                          <div 
+                            className="w-4 h-4 rounded-full flex-shrink-0 ring-1 ring-gray-200" 
+                            style={{ backgroundColor: (formData.type || 'expense') === 'income' ? '#22c55e' : '#f97316' }}
+                          />
+                          <span>{(formData.type || 'expense') === 'income' ? 'Other Income' : 'Other'}</span>
+                        </div>
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+                
+                {/* Helper text */}
+                <div className="flex items-center justify-between text-xs text-gray-500">
+                  <span>
+                    {allCategoryOptions.existing.length > 0 
+                      ? `${allCategoryOptions.existing.length} existing • ${allCategoryOptions.suggested.length} suggested`
+                      : 'Categories are created automatically'
+                    }
+                  </span>
+                  {formData.category && !allCategoryOptions.existing.find(cat => cat.name === formData.category) && (
+                    <span className="text-green-600 font-medium">✓ Will be created</span>
+                  )}
+                </div>
+              </>
+            )}
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="channel">Payment Method</Label>
-            <Select 
-              value={formData.account_name || formData.channel || ''} 
-              onValueChange={(value) => handleChange('account_name', value)}
-              disabled={mode === 'view' || isSubmitting}
-            >
-              <SelectTrigger id="channel">
-                <SelectValue placeholder="Select method" />
-              </SelectTrigger>
-              <SelectContent>
-                {[
-                  { value: 'Online', label: 'Online' },
-                  { value: 'In Store', label: 'In Store' },
-                  { value: 'Bank Transfer', label: 'Bank Transfer' },
-                  { value: 'Cash', label: 'Cash' },
-                ].map((channel) => (
-                  <SelectItem key={channel.value} value={channel.value}>
-                    {channel.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label htmlFor="account">Account</Label>
+            {isViewOnly ? (
+              <div className="bg-gray-50 p-2 rounded border">
+                {formData.account_name || formData.channel || 'No account'}
+              </div>
+            ) : (
+              <Select 
+                value={formData.account_name || formData.channel || ''} 
+                onValueChange={(value) => handleChange('account_name', value)}
+                disabled={isSubmitting}
+              >
+                <SelectTrigger id="account">
+                  <SelectValue placeholder="Select account" />
+                </SelectTrigger>
+                <SelectContent>
+                  {[
+                    { value: 'Online', label: 'Online' },
+                    { value: 'In Store', label: 'In Store' },
+                    { value: 'Bank Transfer', label: 'Bank Transfer' },
+                    { value: 'Cash', label: 'Cash' },
+                  ].map((method) => (
+                    <SelectItem key={method.value} value={method.value}>
+                      {method.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
           
           {mode === 'view' && transaction && (

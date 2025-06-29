@@ -104,28 +104,28 @@ const DateRangeSelector: React.FC<DateRangeSelectorProps> = ({
     <div className="flex items-center space-x-2">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" className="h-10 text-sm">
+          <Button variant="outline" className="h-10 text-sm bg-white border-green-500 text-green-700 hover:bg-green-50">
             <CalendarIcon className="h-4 w-4 mr-2" />
             {getDisplayText()}
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-56 bg-white p-0">
-          <DropdownMenuItem onClick={() => handlePresetSelect('today')} className="cursor-pointer">
+        <DropdownMenuContent className="w-56 bg-white border-green-200 p-0">
+          <DropdownMenuItem onClick={() => handlePresetSelect('today')} className="cursor-pointer hover:bg-green-50 hover:text-green-700">
             Today
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handlePresetSelect('yesterday')} className="cursor-pointer">
+          <DropdownMenuItem onClick={() => handlePresetSelect('yesterday')} className="cursor-pointer hover:bg-green-50 hover:text-green-700">
             Yesterday
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handlePresetSelect('7days')} className="cursor-pointer">
+          <DropdownMenuItem onClick={() => handlePresetSelect('7days')} className="cursor-pointer hover:bg-green-50 hover:text-green-700">
             Last 7 days
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handlePresetSelect('30days')} className="cursor-pointer">
+          <DropdownMenuItem onClick={() => handlePresetSelect('30days')} className="cursor-pointer hover:bg-green-50 hover:text-green-700">
             Last 30 days
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handlePresetSelect('thisYear')} className="cursor-pointer">
+          <DropdownMenuItem onClick={() => handlePresetSelect('thisYear')} className="cursor-pointer hover:bg-green-50 hover:text-green-700">
             This year
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handlePresetSelect('allTime')} className="cursor-pointer">
+          <DropdownMenuItem onClick={() => handlePresetSelect('allTime')} className="cursor-pointer hover:bg-green-50 hover:text-green-700">
             All time
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -133,7 +133,7 @@ const DateRangeSelector: React.FC<DateRangeSelectorProps> = ({
 
       <Button 
         variant="outline" 
-        className="h-10 text-sm bg-gray-800 text-white hover:bg-gray-700" 
+        className="h-10 text-sm bg-white border-green-500 text-green-700 hover:bg-green-50" 
         onClick={() => setIsCalendarOpen(true)}
       >
         Custom Range
@@ -145,7 +145,7 @@ const DateRangeSelector: React.FC<DateRangeSelectorProps> = ({
             Open Calendar
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0 bg-white" align="start">
+        <PopoverContent className="w-auto p-0 bg-white border-green-200" align="start">
           <Calendar
             mode="range"
             defaultMonth={tempDateRange.from}
@@ -165,12 +165,14 @@ const DateRangeSelector: React.FC<DateRangeSelectorProps> = ({
             <Button
               variant="outline"
               size="sm"
+              className="border-green-500 text-green-700 hover:bg-green-50"
               onClick={() => setIsCalendarOpen(false)}
             >
               Cancel
             </Button>
             <Button
               size="sm"
+              className="bg-green-600 hover:bg-green-700 text-white"
               onClick={() => {
                 if (tempDateRange.from && tempDateRange.to) {
                   onDateRangeChange(tempDateRange.from, tempDateRange.to);

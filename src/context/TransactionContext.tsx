@@ -1,5 +1,4 @@
-
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { 
   createTransaction,
   deleteTransaction,
@@ -31,6 +30,7 @@ export interface TransactionContextType {
     remainingPercentChange: number;
   };
   getTransactionsByPeriod: () => any; // Placeholder for backward compatibility
+  setCategoryRefreshCallback: (callback: () => Promise<void>) => void;
 }
 
 const TransactionContext = createContext<TransactionContextType | undefined>(undefined);
@@ -39,11 +39,17 @@ export const TransactionProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
+  const [categoryRefreshCallback, setCategoryRefreshCallbackState] = useState<(() => Promise<void>) | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
   const { accounts, refreshAccounts } = useAccounts();
 
-  const fetchAllTransactions = async () => {
+  // Wrapper function to safely set the callback
+  const setCategoryRefreshCallback = (callback: (() => Promise<void>) | null) => {
+    setCategoryRefreshCallbackState(callback);
+  };
+
+  const fetchAllTransactions = useCallback(async () => {
     if (!user) {
       setLoading(false);
       return;
@@ -75,18 +81,28 @@ export const TransactionProvider: React.FC<{ children: React.ReactNode }> = ({ c
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, toast]);
 
   const addNewTransaction = async (transaction: Omit<Transaction, "id" | "user_id" | "created_at" | "updated_at">) => {
     try {
+      console.log('Adding new transaction:', transaction);
+
+      // Ensure all required fields are present
+      if (!transaction.amount || !transaction.type) {
+        throw new Error('Amount and type are required fields');
+      }
+
       const result = await createTransaction({
-        transaction_date: transaction.transaction_date || transaction.date,
+        transaction_date: transaction.transaction_date || transaction.date || new Date().toISOString(),
         type: transaction.type,
         description: transaction.description || '',
         amount: transaction.amount,
-        category: transaction.category,
+        category: transaction.category || null,
+        category_id: transaction.category_id || null,
         account_name: transaction.account_name || transaction.channel || ''
       });
+      
+      console.log('Transaction created, processing result:', result);
       
       const processedResult: Transaction = {
         ...result,
@@ -100,6 +116,15 @@ export const TransactionProvider: React.FC<{ children: React.ReactNode }> = ({ c
       
       await refreshAccounts();
       
+      // Refresh categories if callback is set
+      if (categoryRefreshCallback && typeof categoryRefreshCallback === 'function') {
+        try {
+          await categoryRefreshCallback();
+        } catch (error) {
+          console.warn('Error refreshing categories:', error);
+        }
+      }
+      
       toast({
         title: "Success",
         description: "Transaction added successfully",
@@ -108,9 +133,26 @@ export const TransactionProvider: React.FC<{ children: React.ReactNode }> = ({ c
       return processedResult;
     } catch (err) {
       console.error('Error adding transaction:', err);
+      
+      // Provide more specific error messages
+      let errorMessage = "Failed to add transaction";
+      if (err instanceof Error) {
+        if (err.message.includes('amount')) {
+          errorMessage = "Please enter a valid amount";
+        } else if (err.message.includes('type')) {
+          errorMessage = "Please select a transaction type";
+        } else if (err.message.includes('authenticated')) {
+          errorMessage = "Please sign in to add transactions";
+        } else if (err.message.includes('duplicate')) {
+          errorMessage = "This transaction already exists";
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to add transaction",
+        description: errorMessage,
         variant: "destructive",
       });
       throw err;
@@ -142,6 +184,15 @@ export const TransactionProvider: React.FC<{ children: React.ReactNode }> = ({ c
       
       await refreshAccounts();
       
+      // Refresh categories if callback is set
+      if (categoryRefreshCallback && typeof categoryRefreshCallback === 'function') {
+        try {
+          await categoryRefreshCallback();
+        } catch (error) {
+          console.warn('Error refreshing categories:', error);
+        }
+      }
+      
       toast({
         title: "Success",
         description: "Transaction updated successfully",
@@ -165,6 +216,15 @@ export const TransactionProvider: React.FC<{ children: React.ReactNode }> = ({ c
       setTransactions(prev => prev.filter(item => item.id !== id));
       
       await refreshAccounts();
+      
+      // Refresh categories if callback is set
+      if (categoryRefreshCallback && typeof categoryRefreshCallback === 'function') {
+        try {
+          await categoryRefreshCallback();
+        } catch (error) {
+          console.warn('Error refreshing categories:', error);
+        }
+      }
       
       toast({
         title: "Success",
@@ -252,7 +312,8 @@ export const TransactionProvider: React.FC<{ children: React.ReactNode }> = ({ c
         getTransactionById,
         getMonthlyTotals,
         getTransactionsSummary,
-        getTransactionsByPeriod
+        getTransactionsByPeriod,
+        setCategoryRefreshCallback
       }}
     >
       {children}

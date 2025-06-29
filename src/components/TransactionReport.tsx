@@ -23,7 +23,26 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import DateRangeSelector, { DateRangePreset } from '@/components/DateRangeSelector';
+import TransactionsChart from '@/components/TransactionsChart';
+import CategoryChart from '@/components/CategoryChart';
+import { 
+  PieChart, 
+  Pie, 
+  Cell, 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  Area,
+  AreaChart
+} from 'recharts';
 
 declare module 'jspdf' {
   interface jsPDF {
@@ -124,6 +143,55 @@ const TransactionReport = () => {
     });
     return Array.from(uniqueCategories);
   }, [transactions]);
+
+  // Prepare chart data
+  const chartData = useMemo(() => {
+    const dateGroups: Record<string, { date: string, income: number, expenses: number }> = {};
+    
+    filteredTransactions.forEach(transaction => {
+      const date = format(new Date(transaction.transaction_date || transaction.date || ''), 'MMM dd');
+      
+      if (!dateGroups[date]) {
+        dateGroups[date] = { date, income: 0, expenses: 0 };
+      }
+      
+      if (transaction.type === 'income' || transaction.amount > 0) {
+        dateGroups[date].income += Math.abs(transaction.amount);
+      } else {
+        dateGroups[date].expenses += Math.abs(transaction.amount);
+      }
+    });
+    
+    return Object.values(dateGroups).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [filteredTransactions]);
+
+  // Account balance chart data
+  const accountChartData = useMemo(() => {
+    return accounts.map(account => ({
+      name: account.name,
+      balance: account.balance || 0,
+      type: account.type
+    }));
+  }, [accounts]);
+
+  // Category breakdown data
+  const categoryChartData = useMemo(() => {
+    const categoryMap = new Map<string, number>();
+    
+    filteredTransactions.forEach(transaction => {
+      const category = transaction.category || 'Other';
+      const amount = Math.abs(transaction.amount);
+      categoryMap.set(category, (categoryMap.get(category) || 0) + amount);
+    });
+
+    const colors = ['#10b981', '#3b82f6', '#8b5cf6', '#ef4444', '#f59e0b', '#06b6d4', '#84cc16', '#f97316'];
+    
+    return Array.from(categoryMap.entries()).map(([name, value], index) => ({
+      name,
+      value,
+      color: colors[index % colors.length]
+    })).sort((a, b) => b.value - a.value);
+  }, [filteredTransactions]);
 
   const generatePDF = async () => {
     setIsGenerating(true);
@@ -310,6 +378,7 @@ const TransactionReport = () => {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Financial Report</title>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <style>
           body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -388,6 +457,53 @@ const TransactionReport = () => {
             margin-top: 40px;
             text-align: center;
           }
+          
+          .chart-container {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #fafafa;
+          }
+          
+          .chart-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+          }
+          
+          .chart-box {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            height: 300px;
+          }
+          
+          .chart-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+            text-align: center;
+          }
+          
+          .chart-wrapper {
+            height: 250px;
+            position: relative;
+          }
+          
+          canvas {
+            max-width: 100%;
+            height: 250px !important;
+            width: 100% !important;
+          }
+          
+          @media (max-width: 768px) {
+            .chart-grid {
+              grid-template-columns: 1fr;
+            }
+          }
         </style>
       </head>
       <body>
@@ -424,6 +540,39 @@ const TransactionReport = () => {
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="section">
+          <h2>Financial Visualizations</h2>
+          <div class="chart-container">
+            <div class="chart-grid">
+              <div class="chart-box">
+                <div class="chart-title">Transaction Trends</div>
+                <div class="chart-wrapper">
+                  <canvas id="transactionChart" width="400" height="250"></canvas>
+                </div>
+              </div>
+              <div class="chart-box">
+                <div class="chart-title">Category Breakdown</div>
+                <div class="chart-wrapper">
+                  <canvas id="categoryChart" width="400" height="250"></canvas>
+                </div>
+              </div>
+              <div class="chart-box">
+                <div class="chart-title">Account Balances</div>
+                <div class="chart-wrapper">
+                  <canvas id="accountChart" width="400" height="250"></canvas>
+                </div>
+              </div>
+              <div class="chart-box">
+                <div class="chart-title">Financial Summary</div>
+                <div class="chart-wrapper">
+                  <canvas id="summaryChart" width="400" height="250"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="section">
@@ -519,6 +668,168 @@ const TransactionReport = () => {
         <p class="footer-note">
           This is a preview of your financial report. You can download the full PDF version for a more detailed report.
         </p>
+
+        <script>
+          // Prepare chart data
+          const chartData = ${JSON.stringify(chartData)};
+          const categoryData = ${JSON.stringify(categoryChartData)};
+          const accountData = ${JSON.stringify(accountChartData)};
+          const financialSummary = ${JSON.stringify(financialSummary)};
+
+          // Transaction Trends Chart
+          const transactionCtx = document.getElementById('transactionChart').getContext('2d');
+          new Chart(transactionCtx, {
+            type: 'line',
+            data: {
+              labels: chartData.map(d => d.date),
+              datasets: [
+                {
+                  label: 'Income',
+                  data: chartData.map(d => d.income),
+                  borderColor: '#10b981',
+                  backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                  fill: true,
+                  tension: 0.4
+                },
+                {
+                  label: 'Expenses',
+                  data: chartData.map(d => d.expenses),
+                  borderColor: '#ef4444',
+                  backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                  fill: true,
+                  tension: 0.4
+                }
+              ]
+            },
+            options: {
+              responsive: false,
+              maintainAspectRatio: true,
+              plugins: {
+                legend: {
+                  position: 'top',
+                }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  ticks: {
+                    callback: function(value) {
+                      return '$' + value.toLocaleString();
+                    }
+                  }
+                }
+              }
+            }
+          });
+
+          // Category Breakdown Chart
+          const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+          new Chart(categoryCtx, {
+            type: 'doughnut',
+            data: {
+              labels: categoryData.map(d => d.name),
+              datasets: [{
+                data: categoryData.map(d => d.value),
+                backgroundColor: categoryData.map(d => d.color),
+                borderWidth: 2,
+                borderColor: '#fff'
+              }]
+            },
+            options: {
+              responsive: false,
+              maintainAspectRatio: true,
+              plugins: {
+                legend: {
+                  position: 'bottom',
+                }
+              }
+            }
+          });
+
+          // Account Balances Chart
+          const accountCtx = document.getElementById('accountChart').getContext('2d');
+          new Chart(accountCtx, {
+            type: 'bar',
+            data: {
+              labels: accountData.map(d => d.name),
+              datasets: [{
+                label: 'Balance',
+                data: accountData.map(d => d.balance),
+                backgroundColor: '#3b82f6',
+                borderColor: '#2563eb',
+                borderWidth: 1,
+                borderRadius: 4
+              }]
+            },
+            options: {
+              responsive: false,
+              maintainAspectRatio: true,
+              plugins: {
+                legend: {
+                  display: false
+                }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  ticks: {
+                    callback: function(value) {
+                      return '$' + value.toLocaleString();
+                    }
+                  }
+                }
+              }
+            }
+          });
+
+          // Financial Summary Chart
+          const summaryCtx = document.getElementById('summaryChart').getContext('2d');
+          new Chart(summaryCtx, {
+            type: 'bar',
+            data: {
+              labels: ['Income', 'Expenses', 'Net Balance'],
+              datasets: [{
+                label: 'Amount',
+                data: [
+                  financialSummary.totalIncome,
+                  financialSummary.totalExpenses,
+                  Math.abs(financialSummary.balance)
+                ],
+                backgroundColor: [
+                  '#10b981',
+                  '#ef4444',
+                  financialSummary.balance >= 0 ? '#3b82f6' : '#f59e0b'
+                ],
+                borderColor: [
+                  '#059669',
+                  '#dc2626',
+                  financialSummary.balance >= 0 ? '#2563eb' : '#d97706'
+                ],
+                borderWidth: 1,
+                borderRadius: 4
+              }]
+            },
+            options: {
+              responsive: false,
+              maintainAspectRatio: true,
+              plugins: {
+                legend: {
+                  display: false
+                }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  ticks: {
+                    callback: function(value) {
+                      return '$' + value.toLocaleString();
+                    }
+                  }
+                }
+              }
+            }
+          });
+        </script>
       </body>
       </html>
     `;
@@ -590,18 +901,183 @@ const TransactionReport = () => {
           </div>
         </div>
       </div>
+
+      {/* Chart Visualizations */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Transaction Trends Chart */}
+        <Card className="shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold">Transaction Trends</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              {chartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData}>
+                    <defs>
+                      <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0.1} />
+                      </linearGradient>
+                      <linearGradient id="colorExpenses" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0.1} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(156, 163, 175, 0.2)" />
+                    <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                    <YAxis tickFormatter={(value) => `$${value}`} tick={{ fontSize: 12 }} />
+                    <Tooltip 
+                      formatter={(value, name) => [`$${value}`, name]}
+                      labelStyle={{ color: '#374151' }}
+                      contentStyle={{ backgroundColor: '#f9fafb', border: '1px solid #e5e7eb' }}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="income" 
+                      stroke="#10b981" 
+                      fill="url(#colorIncome)" 
+                      name="Income"
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="expenses" 
+                      stroke="#ef4444" 
+                      fill="url(#colorExpenses)" 
+                      name="Expenses"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-500">
+                  <p>No transaction data available</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Category Breakdown Chart */}
+        <Card className="shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold">Category Breakdown</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              {categoryChartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={categoryChartData}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {categoryChartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => [`$${value}`, 'Amount']} />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-500">
+                  <p>No category data available</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Account Balances Chart */}
+        <Card className="shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold">Account Balances</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              {accountChartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={accountChartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(156, 163, 175, 0.2)" />
+                    <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                    <YAxis tickFormatter={(value) => `$${value}`} tick={{ fontSize: 12 }} />
+                    <Tooltip 
+                      formatter={(value) => [`$${value}`, 'Balance']}
+                      labelStyle={{ color: '#374151' }}
+                      contentStyle={{ backgroundColor: '#f9fafb', border: '1px solid #e5e7eb' }}
+                    />
+                    <Bar dataKey="balance" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-500">
+                  <p>No account data available</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Financial Summary Chart */}
+        <Card className="shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold">Financial Summary</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart 
+                  data={[
+                    { name: 'Income', value: financialSummary.totalIncome, color: '#10b981' },
+                    { name: 'Expenses', value: financialSummary.totalExpenses, color: '#ef4444' },
+                    { name: 'Net Balance', value: Math.abs(financialSummary.balance), color: financialSummary.balance >= 0 ? '#3b82f6' : '#f59e0b' }
+                  ]}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(156, 163, 175, 0.2)" />
+                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                  <YAxis tickFormatter={(value) => `$${value}`} tick={{ fontSize: 12 }} />
+                  <Tooltip 
+                    formatter={(value) => [`$${value}`, 'Amount']}
+                    labelStyle={{ color: '#374151' }}
+                    contentStyle={{ backgroundColor: '#f9fafb', border: '1px solid #e5e7eb' }}
+                  />
+                  <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                    {[
+                      { name: 'Income', value: financialSummary.totalIncome, color: '#10b981' },
+                      { name: 'Expenses', value: financialSummary.totalExpenses, color: '#ef4444' },
+                      { name: 'Net Balance', value: Math.abs(financialSummary.balance), color: financialSummary.balance >= 0 ? '#3b82f6' : '#f59e0b' }
+                    ].map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
       
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
-            </TableRow>
-          </TableHeader>
+      {/* Recent Transactions Table */}
+      <Card className="shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">Recent Transactions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                </TableRow>
+              </TableHeader>
           <TableBody>
             {filteredTransactions.map((tx) => (
               <TableRow key={tx.id}>
@@ -618,8 +1094,10 @@ const TransactionReport = () => {
               </TableRow>
             ))}
           </TableBody>
-        </Table>
-      </div>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

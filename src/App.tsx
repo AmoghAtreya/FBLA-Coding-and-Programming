@@ -9,6 +9,7 @@ import Auth from '@/pages/Auth';
 import Landing from '@/pages/Landing';
 import LandingNew from '@/landingNew';
 import FAQ from '@/pages/FAQ';
+import Instructions from '@/pages/Instructions';
 import Transactions from '@/pages/Transactions';
 import Categories from '@/pages/Categories';
 import Accounts from '@/pages/Accounts';
@@ -149,6 +150,11 @@ const AppRouter = () => {
     {
       path: '/faq',
       element: <FAQ />, // Removed ProtectedRoute wrapper
+      errorElement: <RouteErrorBoundary />,
+    },
+    {
+      path: '/instructions',
+      element: <Instructions />,
       errorElement: <RouteErrorBoundary />,
     },
     {

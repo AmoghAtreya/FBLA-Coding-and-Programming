@@ -71,27 +71,50 @@ export const getTransactions = async (): Promise<Transaction[]> => {
 // Function to create a new transaction
 export const createTransaction = async (transaction: Partial<Transaction>): Promise<Transaction> => {
   try {
+    console.log('🚀 Starting transaction creation:', transaction);
+
     const { data: { session } } = await supabase.auth.getSession();
 
     if (!session) {
+      console.error('❌ User not authenticated');
       throw new Error("User not authenticated");
     }
 
-    // Ensure required fields are present
+    console.log('✅ User authenticated:', session.user.id);
+
+    // Ensure required fields are present and properly formatted
+    if (transaction.amount === undefined || transaction.amount === null || transaction.amount === 0) {
+      throw new Error("Amount is required and cannot be zero");
+    }
+
+    if (!transaction.type || (transaction.type !== "income" && transaction.type !== "expense")) {
+      throw new Error("Type must be either 'income' or 'expense'");
+    }
+
+    // Validate that income amounts are positive and expense amounts are negative
+    if (transaction.type === "income" && transaction.amount < 0) {
+      throw new Error("Income amounts must be positive");
+    }
+    
+    if (transaction.type === "expense" && transaction.amount > 0) {
+      throw new Error("Expense amounts must be negative");
+    }
+
+    const transactionDate = transaction.transaction_date || transaction.date || new Date().toISOString();
+    
+    // Simplified transaction object - only include fields that exist in the database
     const newTransaction = {
-      ...transaction,
       user_id: session.user.id,
-      created_at: new Date().toISOString(),
-      // Ensure amount is not undefined
-      amount: transaction.amount || 0,
-      // Ensure type is a valid value
-      type: (transaction.type === "income" || transaction.type === "expense") 
-        ? transaction.type 
-        : "expense"
+      amount: transaction.amount, // Keep the amount as-is (positive for income, negative for expenses)
+      type: transaction.type,
+      description: transaction.description || '',
+      category: transaction.category || null,
+      category_id: transaction.category_id || null,
+      account_name: transaction.account_name || null,
+      transaction_date: transactionDate
     };
 
-    // Remove non-existent columns before sending to the database
-    delete (newTransaction as any).account_id;
+    console.log('📝 Creating transaction with data:', newTransaction);
 
     const { data, error } = await supabase
       .from('transactions')
@@ -100,45 +123,40 @@ export const createTransaction = async (transaction: Partial<Transaction>): Prom
       .single();
 
     if (error) {
-      console.error("Error creating transaction:", error);
+      console.error("❌ Database error creating transaction:", error);
       throw error;
     }
 
-    // Update the account balance based on the transaction
-    if (transaction.account_name) {
-      try {
-        // Get the account by name
-        const { data: accountData, error: accountError } = await supabase
-          .from('accounts')
-          .select('id, balance')
-          .eq('name', transaction.account_name)
-          .eq('user_id', session.user.id)
-          .single();
-
-        if (!accountError && accountData) {
-          // Update the account balance
-          const newBalance = parseFloat(accountData.balance?.toString() || '0') + parseFloat(String(transaction.amount || 0));
-          
-          await supabase
-            .from('accounts')
-            .update({ balance: newBalance })
-            .eq('id', accountData.id);
-        }
-      } catch (accError) {
-        console.error("Error updating account balance:", accError);
-        // Don't throw this error, just log it - the transaction was still created
-      }
+    if (!data) {
+      console.error("❌ No data returned from database");
+      throw new Error("Failed to create transaction - no data returned");
     }
 
-    // Ensure the returned data has the correct type
-    return {
-      ...data,
-      type: data.type === "income" ? "income" : "expense",
+    console.log('✅ Transaction created successfully:', data);
+
+    // Return the transaction in the expected format
+    const result: Transaction = {
+      id: data.id,
+      user_id: data.user_id,
+      amount: data.amount,
+      type: data.type as "income" | "expense",
+      description: data.description || '',
+      category: data.category || '',
+      category_id: data.category_id || '',
+      account_name: data.account_name || '',
+      transaction_date: data.transaction_date,
+      created_at: data.created_at,
+      updated_at: data.updated_at,
+      // Legacy fields for compatibility
       date: data.transaction_date,
-      channel: data.account_name
-    } as Transaction;
+      channel: data.account_name || '',
+      status: 'Success'
+    };
+
+    console.log('✅ Returning formatted transaction:', result);
+    return result;
   } catch (error) {
-    console.error("Error creating transaction:", error);
+    console.error("❌ Error in createTransaction:", error);
     throw error;
   }
 };

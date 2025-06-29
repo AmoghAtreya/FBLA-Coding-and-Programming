@@ -155,7 +155,7 @@ const LandingNew = () => {
               >
                 FAQ
               </motion.a>
-              <Link
+              {/* <Link
                 to="/dashboard"
                   className="text-base font-medium transition-colors duration-200"
                   style={{
@@ -166,8 +166,8 @@ const LandingNew = () => {
                   }}
               >
                 Dashboard
-              </Link>
-              <Link
+              </Link> */}
+              {/* <Link
                 to="/landing"
                   className="text-base font-medium transition-colors duration-200"
                   style={{
@@ -178,7 +178,7 @@ const LandingNew = () => {
                   }}
               >
                 Original Landing
-              </Link>
+              </Link> */}
               </div>
             </div>
 
@@ -749,11 +749,18 @@ const LandingNew = () => {
               transition={{ delay: 0.6, duration: 0.6 }}
               viewport={{ once: true }}
             >
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <button className="text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all shadow-xl hover:shadow-2xl" style={{ backgroundColor: '#9fd1b5' }}>
-                  <Link to="/auth" className="text-black">Get Started Now →</Link>
-                </button>
-              </motion.div>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <button className="text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all shadow-xl hover:shadow-2xl" style={{ backgroundColor: '#9fd1b5' }}>
+                    <Link to="/auth" className="text-black">Get Started Now →</Link>
+                  </button>
+                </motion.div>
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <button className="text-white border border-gray-600 hover:border-gray-500 px-8 py-4 rounded-lg font-semibold text-lg transition-all shadow-xl hover:shadow-2xl hover:bg-gray-800/50">
+                    <Link to="/instructions" className="text-white">📖 Instructions</Link>
+                  </button>
+                </motion.div>
+              </div>
             </motion.div>
           </motion.div>
         </div>

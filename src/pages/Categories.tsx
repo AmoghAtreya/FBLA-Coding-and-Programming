@@ -13,20 +13,10 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Dialog, 
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger 
-} from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,52 +27,37 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Pencil, Trash2, Target, TrendingUp, TrendingDown, BarChart3, Calendar, DollarSign, Users, Search, Calculator, ChevronRight, ChevronLeft, X, CheckCircle } from 'lucide-react';
+import { Trash2, Target, Search, Calculator, ChevronRight, ChevronLeft, X, CheckCircle } from 'lucide-react';
 import CategoryChart from '@/components/CategoryChart';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+// Select component removed - no longer needed for manual category creation
 import { useCategoryStats } from "@/hooks/useCategoryStats";
 import { useTransactions } from "@/context/TransactionContext";
 import { generateBudgetSuggestions, generateSpendingInsights } from "@/services/aiService";
 
-const categoryColors = [
-  { value: '#f97316', label: 'Orange', bg: 'bg-orange-500' },
-  { value: '#3b82f6', label: 'Blue', bg: 'bg-blue-500' },
-  { value: '#8b5cf6', label: 'Purple', bg: 'bg-purple-500' },
-  { value: '#ec4899', label: 'Pink', bg: 'bg-pink-500' },
-  { value: '#ef4444', label: 'Red', bg: 'bg-red-500' },
-  { value: '#22c55e', label: 'Green', bg: 'bg-green-500' },
-  { value: '#14b8a6', label: 'Teal', bg: 'bg-teal-500' },
-  { value: '#64748b', label: 'Gray', bg: 'bg-gray-500' },
-];
+// Category colors are auto-assigned when created from transactions
 
 const Categories = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { fetchAllTransactions, transactions } = useTransactions();
+  const { fetchAllTransactions, transactions, setCategoryRefreshCallback } = useTransactions();
   const { categories, loading: isLoading, error, refresh } = useCategoryStats();
 
-  const [newCategory, setNewCategory] = useState({
-    name: '',
-    type: 'expense' as 'income' | 'expense',
-    color: '#f97316',
-    icon: '',
-    budget: 0,
-  });
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
   const [currentCategoryId, setCurrentCategoryId] = useState<string | undefined>(undefined);
   const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<'all' | 'expense' | 'income'>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  // State for expandable expense limits section
+  const [isExpenseLimitsOpen, setIsExpenseLimitsOpen] = useState(false);
+  
+  // Statistics filters state
+  const [statisticsFilters, setStatisticsFilters] = useState({
+    dateRange: 'This Month',
+    type: 'Expenses', // 'Expenses', 'Income', 'All'
+    selectedCategories: 'All categories' // 'All categories' or specific category name
+  });
   
   // Budgeting System State
   const [isBudgetingOpen, setIsBudgetingOpen] = useState(false);
@@ -98,32 +73,200 @@ const Categories = () => {
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [spendingInsights, setSpendingInsights] = useState<string[]>([]);
 
+  // Function to auto-sync categories from existing transactions
+  const syncCategoriesFromTransactions = useCallback(async () => {
+    if (!user || !transactions.length) return;
+
+    try {
+      // Get all unique categories from transactions
+      const uniqueCategories: { [key: string]: { type: 'income' | 'expense' } } = {};
+      
+      transactions.forEach(transaction => {
+        if (transaction.category && transaction.type) {
+          const key = `${transaction.category}_${transaction.type}`;
+          uniqueCategories[key] = {
+            type: transaction.type as 'income' | 'expense'
+          };
+        }
+      });
+
+      // Check which categories already exist in database
+      const { data: existingCategories } = await supabase
+        .from('categories')
+        .select('name, type')
+        .eq('user_id', user.id);
+
+      const existingCategoryKeys = existingCategories?.map(cat => `${cat.name}_${cat.type}`) || [];
+
+      // Create categories that don't exist yet
+      const categoriesToCreate = Object.entries(uniqueCategories)
+        .filter(([key]) => !existingCategoryKeys.includes(key))
+        .map(([key, data]) => {
+          const categoryName = key.split('_').slice(0, -1).join('_');
+          return {
+            name: categoryName,
+            type: data.type,
+            color: data.type === 'income' ? '#22c55e' : '#f97316',
+            user_id: user.id,
+            budget: 0
+          };
+        });
+
+      if (categoriesToCreate.length > 0) {
+        const { error } = await supabase
+          .from('categories')
+          .insert(categoriesToCreate);
+
+        if (error) throw error;
+
+        toast({
+          title: "Categories Synced",
+          description: `Created ${categoriesToCreate.length} categories from your transactions`,
+        });
+
+        // Don't call refresh() here to prevent infinite loops
+        // The useCategoryStats hook will automatically detect the changes
+      }
+    } catch (error) {
+      console.error('Error syncing categories from transactions:', error);
+    }
+  }, [user, transactions, toast]); // Removed refresh from dependencies
+
   useEffect(() => {
-    fetchAllTransactions();
-    refresh();
-  }, []);
+    // Initial data loading
+    const initializeData = async () => {
+      await fetchAllTransactions();
+      // Small delay to ensure transactions are loaded before categories
+      setTimeout(() => {
+        refresh();
+      }, 100);
+    };
+    
+    initializeData();
+  }, []); // Run only on mount
+
+  // Register category refresh callback so transactions update categories
+  useEffect(() => {
+    if (refresh && typeof refresh === 'function') {
+      setCategoryRefreshCallback(refresh);
+    }
+    
+    // Cleanup callback when component unmounts
+    return () => {
+      setCategoryRefreshCallback(null);
+    };
+  }, []); // Empty dependencies - set once and forget
+
+  // Auto-sync categories from transactions when transactions change
+  useEffect(() => {
+    if (user && transactions && transactions.length > 0) {
+      // Add a small delay to prevent too frequent calls
+      const timeoutId = setTimeout(() => {
+        syncCategoriesFromTransactions();
+      }, 500);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [user, transactions.length, syncCategoriesFromTransactions]);
 
   // Debounced AI analysis when monthly income changes
   useEffect(() => {
     if (budgetData.monthlyIncome > 0 && categories.length > 0 && transactions.length > 0) {
       const timeoutId = setTimeout(() => {
         generateAIAnalysis();
-      }, 1500); // Wait 1.5 seconds after user stops typing
+      }, 2000); // Increased delay to prevent frequent calls
 
       return () => clearTimeout(timeoutId);
-    } else {
+      } else {
       // Clear analysis if income is 0 or data is not available
       setAiAnalysis(null);
       setSpendingInsights([]);
     }
-  }, [budgetData.monthlyIncome, categories.length, transactions.length]);
+  }, [budgetData.monthlyIncome]); // Simplified dependencies - only watch income changes
 
-  const expenseCategories = categories?.filter(cat => cat.type === 'expense') ?? [];
-  const incomeCategories = categories?.filter(cat => cat.type === 'income') ?? [];
+  // Get unique categories by name and type
+  const getUniqueCategories = (cats: any[], type?: string) => {
+    let filtered = type ? cats.filter(cat => cat.type === type) : cats;
+    const uniqueMap = new Map();
+    filtered.forEach(cat => {
+      const key = `${cat.name.toLowerCase().trim()}_${cat.type}`;
+      if (!uniqueMap.has(key) || uniqueMap.get(key).spent < cat.spent) {
+        uniqueMap.set(key, cat);
+      }
+    });
+    return Array.from(uniqueMap.values());
+  };
+
+  const expenseCategories = getUniqueCategories(categories || [], 'expense');
+  const incomeCategories = getUniqueCategories(categories || [], 'income');
+  const uniqueCategories = getUniqueCategories(categories || []);
+
+  // Specific color assignments for common categories
+  const specificCategoryColors: Record<string, string> = {
+    'rent': '#C53030',           // Muted red
+    'housing': '#C53030',        // Muted red
+    'entertainment': '#DD6B20',   // Muted orange
+    'education': '#D69E2E',      // Muted golden yellow
+    'food': '#38A169',           // Muted lime green
+    'food & dining': '#38A169',  // Muted lime green
+    'groceries': '#38A169',      // Muted lime green
+    'shopping': '#0987A0',       // Muted cyan blue
+    'utilities': '#3182CE',      // Muted royal blue
+    'other': '#805AD5',          // Muted purple
+    'transportation': '#B83280', // Muted magenta
+    'gas': '#B83280',            // Muted magenta
+    'travel': '#B83280',         // Muted magenta
+    'healthcare': '#E53E3E',     // Muted red-pink
+    'insurance': '#2B6CB0',      // Muted blue
+    'phone': '#553C9A',          // Muted indigo
+    'internet': '#553C9A',       // Muted indigo
+    'subscription': '#9F7AEA',   // Muted light purple
+    'clothing': '#ED64A6',       // Muted pink
+    'personal care': '#F687B3',  // Muted light pink
+    'gym': '#48BB78',            // Muted green
+    'coffee': '#A0AEC0',         // Muted gray
+  };
+
+  // Fallback color palette for categories not in specific list
+  const fallbackColorPalette = [
+    '#4A5568', // Gray 600
+    '#2D3748', // Gray 700
+    '#1A202C', // Gray 800
+    '#718096', // Gray 500
+    '#A0AEC0', // Gray 400
+    '#4FD1C7', // Teal 300
+    '#68D391', // Green 300
+    '#9AE6B4', // Green 200
+    '#F6E05E', // Yellow 300
+    '#F6AD55', // Orange 300
+    '#FC8181', // Red 300
+    '#F687B3', // Pink 300
+    '#B794F6', // Purple 300
+    '#90CDF4', // Blue 300
+    '#81E6D9', // Teal 200
+  ];
+
+  // Function to get color for a category
+  const getCategoryColor = (categoryName: string, index: number) => {
+    const normalizedName = categoryName.toLowerCase().trim();
+    
+    // Check if we have a specific color for this category
+    if (specificCategoryColors[normalizedName]) {
+      return specificCategoryColors[normalizedName];
+    }
+    
+    // Use fallback palette with hash-based selection for consistency
+    let hash = 0;
+    for (let i = 0; i < categoryName.length; i++) {
+      hash = categoryName.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const colorIndex = Math.abs(hash) % fallbackColorPalette.length;
+    return fallbackColorPalette[colorIndex];
+  };
 
   // Filter categories based on active filter and search term
   const filteredCategories = useMemo(() => {
-    let cats = categories;
+    let cats = uniqueCategories;
     
     // Filter by type
     if (activeFilter === 'expense') {
@@ -140,84 +283,58 @@ const Categories = () => {
     }
     
     return cats;
-  }, [categories, activeFilter, searchTerm, expenseCategories, incomeCategories]);
+  }, [uniqueCategories, activeFilter, searchTerm, expenseCategories, incomeCategories]);
 
-  const handleSaveCategory = async () => {
+
+
+  // Function to clean and resync all categories from transactions
+  const handleCleanAndResyncCategories = async () => {
     if (!user) return;
+    
+    const confirmed = window.confirm(
+      "This will:\n" +
+      "1. Remove ALL existing categories\n" + 
+      "2. Scan all your transactions\n" +
+      "3. Create categories ONLY from actual transactions\n\n" +
+      "Are you sure you want to continue?"
+    );
+    
+    if (!confirmed) return;
+
     try {
-      if (!newCategory.name) {
-        toast({
-          title: "Error",
-          description: "Category name is required",
-          variant: "destructive",
-        });
-        return;
-      }
+      // Step 1: Remove all existing categories
+      const { error: deleteError } = await supabase
+        .from('categories')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (deleteError) throw deleteError;
+
+      // Step 2: Fetch all transactions to rebuild categories
+      await fetchAllTransactions();
       
-      const budgetValue = typeof newCategory.budget === 'number' ? 
-        newCategory.budget : 
-        parseFloat(newCategory.budget as unknown as string) || 0;
-      
-      let result;
-      if (isEditMode && currentCategoryId) {
-        const { data, error } = await supabase
-          .from('categories')
-          .update({
-            name: newCategory.name,
-            type: newCategory.type,
-            color: newCategory.color,
-            icon: newCategory.icon,
-            budget: budgetValue,
-          })
-          .eq('id', currentCategoryId)
-          .select();
-        
-        if (error) {
-          console.error("Supabase error:", error);
-          throw error;
-        }
-        
-        result = data?.[0];
+            // Step 3: Wait a moment then sync categories from transactions
+      setTimeout(() => {
+        syncCategoriesFromTransactions();
+      }, 1000);
+
         toast({
-          title: "Success",
-          description: "Category updated successfully",
+        title: "Categories Cleaned & Resynced",
+        description: "All categories have been removed and will be recreated from your transactions",
         });
-      } else {
-        const { data, error } = await supabase
-          .from('categories')
-          .insert({
-            name: newCategory.name,
-            type: newCategory.type,
-            color: newCategory.color,
-            icon: newCategory.icon,
-            budget: budgetValue,
-            user_id: user.id,
-          })
-          .select();
-        
-        if (error) {
-          console.error("Supabase error:", error);
-          throw error;
-        }
-        
-        result = data?.[0];
-        toast({
-          title: "Success",
-          description: "Category added successfully",
-        });
-      }
       
-      await refresh();
-      resetForm();
-    } catch (error: any) {
-      console.error('Error saving category:', error);
+      // Don't call refresh here as syncCategoriesFromTransactions will handle the updates
+    } catch (error) {
+      console.error('Error cleaning and resyncing categories:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to save category",
+        description: "Failed to clean and resync categories",
         variant: "destructive",
       });
     }
   };
+
+  // Categories are now auto-created from transactions only
 
   const handleDeleteCategory = async (id: string) => {
     try {
@@ -227,8 +344,7 @@ const Categories = () => {
         title: "Success",
         description: "Category deleted successfully",
       });
-      await fetchAllTransactions();
-      await refresh();
+      // The useCategoryStats hook will automatically detect the deletion and refresh
       setCategoryToDelete(null);
     } catch (error) {
       console.error('Error deleting category:', error);
@@ -240,31 +356,48 @@ const Categories = () => {
     }
   };
 
-  const handleEditCategory = (category: any) => {
-    setNewCategory({
-      name: category.name,
-      type: category.type,
-      color: category.color,
-      icon: category.icon || '',
-      budget: category.budget || 0
-    });
-    setCurrentCategoryId(category.id);
-    setIsEditMode(true);
-    setIsDialogOpen(true);
-  };
+  // Budget editing is available through the budgeting modal only
 
-  const resetForm = () => {
-    setNewCategory({
-      name: '',
-      type: 'expense',
-      color: '#f97316',
-      icon: '',
-      budget: 0,
+  // Filter categories for statistics based on current filters
+  const getFilteredCategoriesForStats = () => {
+    let filteredCats = categories;
+    
+    // Filter by type first
+    if (statisticsFilters.type === 'Expenses') {
+      filteredCats = expenseCategories;
+    } else if (statisticsFilters.type === 'Income') {
+      filteredCats = incomeCategories;
+    }
+    
+    // Filter categories with spending > 0 first
+    filteredCats = filteredCats.filter(cat => cat.spent > 0);
+    
+    // Then filter by specific category if selected
+    if (statisticsFilters.selectedCategories !== 'All categories') {
+      filteredCats = filteredCats.filter(cat => 
+        cat.name.trim().toLowerCase() === statisticsFilters.selectedCategories.trim().toLowerCase()
+      );
+    }
+    
+    // Remove duplicates by name - keep the one with higher spending
+    const uniqueCategories = new Map();
+    filteredCats.forEach(cat => {
+      const key = cat.name.toLowerCase().trim();
+      if (!uniqueCategories.has(key) || uniqueCategories.get(key).spent < cat.spent) {
+        uniqueCategories.set(key, cat);
+      }
     });
-    setCurrentCategoryId(undefined);
-    setIsEditMode(false);
-    setIsDialogOpen(false);
+    
+    return Array.from(uniqueCategories.values());
   };
+  
+  const filteredStatsCategories = getFilteredCategoriesForStats();
+  const filteredTotalSpent = filteredStatsCategories.reduce((sum, cat) => sum + cat.spent, 0);
+
+  // Calculate summary statistics
+  const totalBudget = expenseCategories.reduce((sum, cat) => sum + (cat.budget || 0), 0);
+  const totalSpent = expenseCategories.reduce((sum, cat) => sum + cat.spent, 0);
+  const totalIncome = incomeCategories.reduce((sum, cat) => sum + cat.spent, 0);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -283,19 +416,19 @@ const Categories = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'over-budget': return 'bg-red-100 text-red-800';
-      case 'near-limit': return 'bg-yellow-100 text-yellow-800';
-      case 'on-track': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'over-budget': return 'bg-gradient-to-r from-red-100 to-red-200 text-red-800 border-red-300 shadow-sm';
+      case 'near-limit': return 'bg-gradient-to-r from-amber-100 to-amber-200 text-amber-800 border-amber-300 shadow-sm';
+      case 'on-track': return 'bg-gradient-to-r from-green-100 to-green-200 text-green-800 border-green-300 shadow-sm';
+      default: return 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 border-gray-300 shadow-sm';
     }
   };
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'over-budget': return 'Over Budget';
-      case 'near-limit': return 'Near Limit';
-      case 'on-track': return 'On Track';
-      default: return 'No Budget';
+      case 'over-budget': return '🚨 Over Budget';
+      case 'near-limit': return '⚠️ Near Limit';
+      case 'on-track': return '✅ On Track';
+      default: return '📝 No Budget';
     }
   };
 
@@ -410,17 +543,41 @@ const Categories = () => {
     }));
   };
 
-  // Calculate summary statistics
-  const totalBudget = expenseCategories.reduce((sum, cat) => sum + (cat.budget || 0), 0);
-  const totalSpent = expenseCategories.reduce((sum, cat) => sum + cat.spent, 0);
-  const totalIncome = incomeCategories.reduce((sum, cat) => sum + cat.spent, 0);
-
-  if (isLoading) {
+    // Show loading state only for initial load
+  if (isLoading && !categories.length) {
     return (
       <Layout>
         <div className="flex justify-center items-center h-64">
+          <div className="flex flex-col items-center space-y-4">
           <div className="h-12 w-12 rounded-full border-4 border-t-green-500 border-gray-300 animate-spin"></div>
+            <p className="text-gray-600">Loading categories...</p>
+          </div>
         </div>
+      </Layout>
+    );
+  }
+
+  // Show error state
+  if (error) {
+  return (
+    <Layout>
+        <div className="flex justify-center items-center h-64">
+          <div className="text-center">
+            <div className="text-red-500 mb-4">
+              <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+          </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Categories</h3>
+            <p className="text-gray-600 mb-4">We couldn't load your categories. Please try again.</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            >
+              Retry
+            </button>
+                </div>
+                </div>
       </Layout>
     );
   }
@@ -428,83 +585,417 @@ const Categories = () => {
   return (
     <Layout>
       <div className="space-y-6">
-        {/* Header with Stats */}
-        <div className="bg-white rounded-lg p-6 shadow-sm border">
-          <div className="flex justify-between items-start mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">CATEGORIES</h1>
-              <p className="text-gray-500 mt-1">Manage your financial categories</p>
-            </div>
-            <div className="flex items-center gap-4">
-              <Button
-                onClick={() => setIsBudgetingOpen(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                <Calculator className="h-4 w-4 mr-2" />
-                Start Budgeting
-              </Button>
-              <div className="flex items-center gap-2 bg-green-50 px-3 py-1 rounded-full">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span className="text-sm font-medium text-green-700">ACTIVE</span>
+        {/* Header with Stats and Chart */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+          {/* Left Side - Categories Info */}
+          <div className="bg-white rounded-lg p-8 shadow-sm border h-fit min-h-[600px] flex flex-col">
+            <div className="mb-10">
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900 mb-3">CATEGORIES</h1>
+                  <p className="text-gray-500">Manage your financial categories</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 bg-gradient-to-r from-green-50 to-green-100 px-4 py-2 rounded-full border border-green-200 shadow-sm">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span className="text-sm font-semibold text-green-700">🟢 ACTIVE</span>
+                  </div>
+                  <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full px-4 py-2 font-bold text-sm shadow-md">
+                    {uniqueCategories.length}
+                  </div>
+                </div>
+                  </div>
+                </div>
+                
+            {/* Stats Grid */}
+            <div className="grid grid-cols-2 gap-6 mb-12 flex-1">
+              <div className="text-center py-6 px-4 bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl border border-blue-200/60 hover:shadow-md transition-all">
+                <div className="text-sm text-blue-700 mb-3 font-semibold">ALL</div>
+                <div className="text-3xl font-bold text-blue-700">{uniqueCategories.length}</div>
+                  </div>
+              <div className="text-center py-6 px-4 bg-gradient-to-br from-red-50 to-red-100/50 rounded-xl border border-red-200/60 hover:shadow-md transition-all">
+                <div className="text-sm text-red-700 mb-3 font-semibold">EXPENSES</div>
+                <div className="text-3xl font-bold text-red-700">{expenseCategories.length}</div>
+                </div>
+              <div className="text-center py-6 px-4 bg-gradient-to-br from-green-50 to-green-100/50 rounded-xl border border-green-200/60 hover:shadow-md transition-all">
+                <div className="text-sm text-green-700 mb-3 font-semibold">INCOME</div>
+                <div className="text-3xl font-bold text-green-700">{incomeCategories.length}</div>
               </div>
-              <div className="bg-gray-100 rounded-full p-1 text-gray-600 font-bold">
-                {categories.length}
+              <div className="text-center py-6 px-4 bg-gradient-to-br from-orange-50 to-orange-100/50 rounded-xl border border-orange-200/60 hover:shadow-md transition-all">
+                <div className="text-sm text-orange-700 mb-3 font-semibold">OVER BUDGET</div>
+                <div className="text-3xl font-bold text-orange-700">
+                  {expenseCategories.filter(cat => getBudgetStatus(cat) === 'over-budget').length}
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Stats Row */}
-          <div className="grid grid-cols-4 gap-6">
-            <div className="text-center">
-              <div className="text-sm text-gray-500 mb-1">ALL</div>
-              <div className="text-2xl font-bold text-blue-600">{categories.length}</div>
+                        {/* Start Budgeting Button */}
+            <div className="mt-auto space-y-3">
+              <Button 
+                onClick={() => setIsBudgetingOpen(true)}
+                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-4 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]"
+              >
+                <Calculator className="h-5 w-5 mr-2" />
+                💡 Start Budgeting
+                </Button>
+              
+              {/* Cleanup Button - only show if there are categories */}
+              {uniqueCategories.length > 0 && (
+                <Button 
+                  onClick={handleCleanAndResyncCategories}
+                  variant="outline"
+                  className="w-full text-red-600 border-red-300 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 py-2 text-sm font-medium transition-all duration-200 hover:border-red-400"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  🧹 Clean & Resync Categories
+                </Button>
+              )}
             </div>
-            <div className="text-center">
-              <div className="text-sm text-gray-500 mb-1">EXPENSES</div>
-              <div className="text-2xl font-bold text-red-600">{expenseCategories.length}</div>
-            </div>
-            <div className="text-center">
-              <div className="text-sm text-gray-500 mb-1">INCOME</div>
-              <div className="text-2xl font-bold text-green-600">{incomeCategories.length}</div>
-            </div>
-            <div className="text-center">
-              <div className="text-sm text-gray-500 mb-1">OVER BUDGET</div>
-              <div className="text-2xl font-bold text-red-600">
-                {expenseCategories.filter(cat => getBudgetStatus(cat) === 'over-budget').length}
+        </div>
+
+          {/* Right Side - Statistics */}
+          <div className="bg-white rounded-lg p-8 shadow-sm border min-h-[600px] flex flex-col">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-3xl font-bold text-gray-900 truncate">Statistics</h2>
+              <button className="p-2 hover:bg-gray-100 rounded-full">
+                <X className="h-5 w-5 text-gray-400" />
+              </button>
+                </div>
+
+            {/* Filter Controls */}
+            <div className="flex gap-4 mb-6">
+              <div className="flex-1">
+                <select 
+                  value={statisticsFilters.dateRange}
+                  onChange={(e) => setStatisticsFilters(prev => ({ ...prev, dateRange: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white truncate"
+                >
+                  <option value="This Week">This Week</option>
+                  <option value="This Month">This Month</option>
+                  <option value="Last Month">Last Month</option>
+                  <option value="Last 3 Months">Last 3 Months</option>
+                  <option value="Last 6 Months">Last 6 Months</option>
+                  <option value="This Year">This Year</option>
+                  <option value="All Time">All Time</option>
+                </select>
+                </div>
+              <select 
+                value={statisticsFilters.type}
+                onChange={(e) => setStatisticsFilters(prev => ({ ...prev, type: e.target.value }))}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white truncate"
+              >
+                <option value="Expenses">Expenses</option>
+                <option value="Income">Income</option>
+                <option value="All">All</option>
+              </select>
+              <select 
+                value={statisticsFilters.selectedCategories}
+                onChange={(e) => setStatisticsFilters(prev => ({ ...prev, selectedCategories: e.target.value }))}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white min-w-[140px] truncate"
+              >
+                <option value="All categories">All categories</option>
+                {(statisticsFilters.type === 'Expenses' ? expenseCategories : 
+                  statisticsFilters.type === 'Income' ? incomeCategories : 
+                  categories)
+                  .filter(cat => cat.spent > 0)
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map(category => (
+                    <option key={category.id} value={category.name}>
+                      {category.name}
+                    </option>
+                  ))}
+              </select>
               </div>
+
+            {/* Active Filters Indicator */}
+            {(statisticsFilters.type !== 'Expenses' || statisticsFilters.selectedCategories !== 'All categories' || statisticsFilters.dateRange !== 'This Month') && (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm text-blue-700">
+                    <span className="font-medium">Active Filters:</span>
+                    <span>{statisticsFilters.dateRange}</span>
+                    <span>•</span>
+                    <span>{statisticsFilters.type}</span>
+                    {statisticsFilters.selectedCategories !== 'All categories' && (
+                      <>
+                        <span>•</span>
+                        <span>{statisticsFilters.selectedCategories}</span>
+                      </>
+                    )}
+                </div>
+                  <button 
+                    onClick={() => setStatisticsFilters({
+                      dateRange: 'This Month',
+                      type: 'Expenses',
+                      selectedCategories: 'All categories'
+                    })}
+                    className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                  >
+                    Clear All
+                  </button>
+                </div>
+              </div>
+            )}
+
+                                    {/* Chart Section */}
+            <div className="flex-1 mb-6 min-h-[250px]">
+              <div className="flex flex-row items-start gap-6 h-full w-full">
+                {/* Legend - Left Side */}
+                <div className="flex-1 min-w-0 flex flex-col">
+                  {filteredStatsCategories.length === 0 ? (
+                    <div className="flex items-center justify-center h-48">
+                      <p className="text-sm text-gray-500">No categories to display</p>
+                  </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {filteredStatsCategories
+                        .sort((a, b) => b.spent - a.spent)
+                        .map((category, index) => {
+                          const categoryColor = getCategoryColor(category.name, index);
+                          return (
+                            <div 
+                              key={`${category.name}-${category.id}`}
+                              className="flex items-center gap-3"
+                            >
+                              <div 
+                                className="w-4 h-4 rounded-sm flex-shrink-0"
+                                style={{ backgroundColor: categoryColor }}
+                              ></div>
+                              <span className="text-sm font-medium text-gray-700 flex-1">
+                                {category.name}
+                              </span>
+                              <span className="text-sm font-bold text-gray-900 flex-shrink-0">
+                                ${category.spent.toFixed(0)}
+                              </span>
+                </div>
+                          );
+                        })}
+                </div>
+                  )}
+              </div>
+                
+                {/* Pie Chart - Right Side */}
+                <div className="flex-shrink-0 w-64">
+                  {filteredStatsCategories.length === 0 ? (
+                    <div className="h-64 w-64 flex items-center justify-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                      <div className="text-center">
+                        <div className="text-gray-400 mb-2 text-3xl">📊</div>
+                        <p className="text-base text-gray-500 font-medium">No data available</p>
+                        <p className="text-sm text-gray-400">Try adjusting your filters</p>
+                </div>
+                </div>
+                  ) : (
+                    <div className="relative h-64 w-64 flex items-center justify-center">
+                    <div className="relative">
+                      <svg className="transform -rotate-90 w-64 h-64" viewBox="0 0 280 280">
+                        <defs>
+                          <mask id="donut-mask">
+                            <rect width="280" height="280" fill="white" />
+                            <circle cx="140" cy="140" r="85" fill="black" />
+                          </mask>
+                        </defs>
+                      {(() => {
+                        const categoriesWithSpending = filteredStatsCategories;
+                        let cumulativeAngle = 0;
+                        
+                        return categoriesWithSpending.map((category, index) => {
+                          const percentage = filteredTotalSpent > 0 ? (category.spent / filteredTotalSpent) : 0;
+                          const angle = percentage * 360;
+                          const startAngle = cumulativeAngle;
+                          const endAngle = cumulativeAngle + angle;
+                          
+                          // Calculate path for pie slice
+                          const startAngleRad = (startAngle * Math.PI) / 180;
+                          const endAngleRad = (endAngle * Math.PI) / 180;
+                          
+                          const x1 = 140 + 110 * Math.cos(startAngleRad);
+                          const y1 = 140 + 110 * Math.sin(startAngleRad);
+                          const x2 = 140 + 110 * Math.cos(endAngleRad);
+                          const y2 = 140 + 110 * Math.sin(endAngleRad);
+                          
+                          const largeArcFlag = angle > 180 ? 1 : 0;
+                          
+                          const pathData = [
+                            `M 140 140`,
+                            `L ${x1} ${y1}`,
+                            `A 110 110 0 ${largeArcFlag} 1 ${x2} ${y2}`,
+                            'Z'
+                          ].join(' ');
+                          
+                          cumulativeAngle += angle;
+                          
+                          // Get unique color for this category
+                          const categoryColor = getCategoryColor(category.name, index);
+                          const percentageText = ((category.spent / filteredTotalSpent) * 100).toFixed(1);
+                          
+                          return (
+                            <g key={category.id}>
+                              <path
+                                d={pathData}
+                                fill={categoryColor}
+                                mask="url(#donut-mask)"
+                                className="hover:opacity-80 transition-opacity cursor-pointer"
+                              />
+                              <title>{`${category.name}: $${category.spent.toFixed(1)} (${percentageText}%)`}</title>
+                            </g>
+                          );
+                        });
+                      })()}
+                    </svg>
+                    
+                    {/* Center Text */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="text-center">
+                        <div className="text-base text-gray-500 mb-1">
+                          Total
+              </div>
+                        <div className="text-2xl font-bold text-gray-900">
+                          ${Math.round(filteredTotalSpent).toLocaleString()}
+        </div>
+                    </div>
+                    </div>
+                  </div>
+                </div>
+                )}
+              </div>
+            </div>
+                          </div>
+                          
+            {/* Expandable Expense Limits Section */}
+            <div className="border rounded-lg">
+              <button
+                onClick={() => setIsExpenseLimitsOpen(!isExpenseLimitsOpen)}
+                className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-gray-700">
+                    Expense limit of {new Date().toLocaleDateString('en-US', { month: 'long' })}
+                  </span>
+                  <span className="text-lg font-bold text-gray-900">
+                    ${(totalBudget - totalSpent).toFixed(2)} left
+                  </span>
+                  </div>
+                      <motion.div
+                  animate={{ rotate: isExpenseLimitsOpen ? 180 : 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <ChevronRight className="h-4 w-4 text-gray-400" />
+                </motion.div>
+              </button>
+
+              {isExpenseLimitsOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                  className="border-t bg-gray-50"
+                >
+                  <div className="p-4 space-y-4">
+                    {/* Overall Progress */}
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-medium">${totalSpent.toFixed(2)} / ${totalBudget.toFixed(2)}</span>
+                      <span className="text-gray-500">
+                        {totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0}% used
+                      </span>
+                        </div>
+                        
+                    {/* Category Progress Bars */}
+                    <div className="space-y-3">
+                      {expenseCategories
+                        .filter(cat => cat.budget > 0)
+                        .sort((a, b) => b.spent - a.spent)
+                        .map((category, index) => {
+                          const categoryColor = getCategoryColor(category.name, index);
+                          return (
+                            <div key={category.id} className="space-y-2">
+                              <div className="flex justify-between items-center">
+                                <div className="flex items-center gap-2">
+                                  <div 
+                                    className="w-3 h-3 rounded-full"
+                                    style={{ backgroundColor: categoryColor }}
+                                  ></div>
+                                  <span className="text-sm font-medium text-gray-700">
+                                    {category.name}
+                                  </span>
+                            </div>
+                              <span className="text-xs text-gray-500">
+                                  ${category.spent.toFixed(0)} / ${category.budget.toFixed(0)}
+                              </span>
+                            </div>
+                              <div className="flex gap-2">
+                                {/* Current spending bar */}
+                                <div className="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
+                                  <div
+                                    className="h-full rounded-full transition-all duration-500"
+                                    style={{
+                                      width: `${Math.min((category.spent / category.budget) * 100, 100)}%`,
+                                      backgroundColor: category.spent > category.budget ? '#ef4444' : categoryColor
+                                    }}
+                                  ></div>
+                          </div>
+                                                            {/* Previous period comparison */}
+                              <div className="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden opacity-60">
+                                <div
+                                  className="bg-orange-400 h-full rounded-full transition-all duration-500"
+                                  style={{
+                                    width: `${Math.min((category.spent * 0.8 / category.budget) * 100, 100)}%`
+                                  }}
+                                ></div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                          </div>
+                          
+                    {/* Legend */}
+                    <div className="flex justify-end gap-4 text-xs text-gray-500 pt-2 border-t">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-2 bg-gray-600 rounded-sm"></div>
+                        <span>Past 6 months (avg.)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-2 bg-orange-400 rounded-sm"></div>
+                        <span>Last month</span>
+                      </div>
+                    </div>
+                  </div>
+                      </motion.div>
+              )}
             </div>
           </div>
         </div>
 
         {/* Filter Tabs and Search */}
         <div className="flex justify-between items-center">
-          <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
+          <div className="flex gap-1 bg-gradient-to-r from-gray-100 to-gray-50 p-1 rounded-xl shadow-sm border">
             <button
               onClick={() => setActiveFilter('all')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`px-5 py-3 rounded-lg text-sm font-semibold transition-all duration-200 ${
                 activeFilter === 'all'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md transform scale-105'
+                  : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
               }`}
             >
-              ALL {categories.length}
+              ALL {uniqueCategories.length}
             </button>
             <button
               onClick={() => setActiveFilter('expense')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`px-5 py-3 rounded-lg text-sm font-semibold transition-all duration-200 ${
                 activeFilter === 'expense'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-md transform scale-105'
+                  : 'text-gray-600 hover:text-red-600 hover:bg-red-50'
               }`}
             >
               EXPENSES {expenseCategories.length}
             </button>
             <button
               onClick={() => setActiveFilter('income')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`px-5 py-3 rounded-lg text-sm font-semibold transition-all duration-200 ${
                 activeFilter === 'income'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md transform scale-105'
+                  : 'text-gray-600 hover:text-green-600 hover:bg-green-50'
               }`}
             >
               INCOME {incomeCategories.length}
@@ -521,124 +1012,35 @@ const Categories = () => {
                 className="pl-10 w-64"
               />
             </div>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button 
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                  onClick={() => {
-                    setIsEditMode(false);
-                    resetForm();
-                  }}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Category
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>{isEditMode ? 'Edit Category' : 'Add New Category'}</DialogTitle>
-                  <DialogDescription>
-                    {isEditMode 
-                      ? 'Update your category details and budget settings.' 
-                      : 'Create a new category to organize your transactions and set budget limits.'
-                    }
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="category-name">Category Name</Label>
-                    <Input
-                      id="category-name"
-                      placeholder="e.g., Groceries, Entertainment"
-                      value={newCategory.name}
-                      onChange={(e) => setNewCategory({...newCategory, name: e.target.value})}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="category-type">Type</Label>
-                    <Select value={newCategory.type} onValueChange={(value: 'income' | 'expense') => setNewCategory({...newCategory, type: value})}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select category type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="expense">Expense</SelectItem>
-                        <SelectItem value="income">Income</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="category-budget">Budget (Optional)</Label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
-                      <Input
-                        id="category-budget"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        className="pl-8"
-                        placeholder="0.00"
-                        value={newCategory.budget || ''}
-                        onChange={(e) => setNewCategory({...newCategory, budget: parseFloat(e.target.value) || 0})}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label>Color</Label>
-                    <div className="flex flex-wrap gap-2">
-                      {categoryColors.map((color) => (
-                        <button
-                          key={color.value}
-                          type="button"
-                          className={`w-8 h-8 rounded-full border-2 transition-all ${
-                            newCategory.color === color.value 
-                              ? 'border-gray-900 scale-110' 
-                              : 'border-gray-300 hover:scale-105'
-                          }`}
-                          style={{ backgroundColor: color.value }}
-                          onClick={() => setNewCategory({...newCategory, color: color.value})}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={resetForm}>
-                    Cancel
-                  </Button>
-                  <Button 
-                    onClick={handleSaveCategory}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    {isEditMode ? 'Update Category' : 'Add Category'}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </div>
-
+            <div className="text-sm text-gray-500 italic">
+              📝 Categories are created automatically from your transactions
+            </div>
+                          </div>
+                        </div>
+                        
         {/* Categories Grid */}
         <div className="space-y-3">
-          {filteredCategories.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-lg shadow-sm border">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Target className="h-8 w-8 text-gray-400" />
-              </div>
-              <p className="text-gray-500 mb-4">
-                {searchTerm ? 'No categories match your search' : 'No categories yet'}
+                    {filteredCategories.length === 0 ? (
+            <div className="text-center py-12 bg-gradient-to-br from-gray-50 to-white rounded-xl shadow-sm border border-gray-200">
+                    <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center mx-auto mb-6 shadow-md">
+                      <Target className="h-10 w-10 text-blue-600" />
+                            </div>
+              <p className="text-gray-600 mb-4 text-lg font-medium">
+                {searchTerm ? '🔍 No categories match your search' : '📂 No categories yet'}
               </p>
               {!searchTerm && (
-                <Button 
-                  onClick={() => setIsDialogOpen(true)}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  Add First Category
-                </Button>
-              )}
-            </div>
+                <div className="space-y-3">
+                  <p className="text-sm text-gray-500">
+                    Categories are created automatically when you add transactions
+                  </p>
+                  <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-4 inline-block">
+                    <p className="text-sm text-blue-700 font-semibold">
+                      💡 Go to the Transactions page to add your first transaction
+                    </p>
+                          </div>
+                  </div>
+                )}
+                  </div>
           ) : (
             <>
               {/* Table Header */}
@@ -654,37 +1056,43 @@ const Categories = () => {
               </div>
 
               {/* Category Cards */}
-              {filteredCategories.map((category) => {
+              {filteredCategories.map((category, index) => {
                 const status = getBudgetStatus(category);
+                const categoryColor = getCategoryColor(category.name, index);
                 return (
-                  <motion.div
-                    key={category.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
+                    <motion.div
+                      key={category.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
                     className="p-4 rounded-lg shadow-sm border hover:shadow-md transition-all"
                     style={{ 
-                      backgroundColor: category.color + '08',
-                      borderColor: category.color + '20'
+                      backgroundColor: categoryColor + '08',
+                      borderColor: categoryColor + '20'
                     }}
                   >
                     <div className="grid grid-cols-6 gap-4 items-center">
                       {/* Category Info */}
-                      <div className="flex items-center space-x-3">
-                        <div 
-                          className="w-12 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
-                          style={{ backgroundColor: category.color + '20', color: category.color, border: `2px solid ${category.color}40` }}
+                        <div className="flex items-center space-x-3">
+                          <div 
+                          className="w-14 h-10 rounded-xl flex items-center justify-center font-bold text-sm shadow-sm border-2 relative overflow-hidden"
+                          style={{ 
+                            backgroundColor: categoryColor, 
+                            color: 'white',
+                            borderColor: categoryColor
+                          }}
                         >
-                          {category.name.charAt(0).toUpperCase()}
+                          <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"></div>
+                          <span className="relative z-10">{category.name.charAt(0).toUpperCase()}</span>
                         </div>
-                        <div>
+                          <div>
                           <h3 className="font-semibold text-gray-900">{category.name}</h3>
-                          <p className="text-sm text-gray-500">
-                            {category.type === 'expense' ? 'Expense Category' : 'Income Category'}
-                          </p>
+                          <p className="text-sm" style={{ color: categoryColor }}>
+                            {category.type === 'expense' ? '💸 Expense Category' : '💰 Income Category'}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-
+                        
                       {/* Activity */}
                       <div>
                         <p className="text-sm text-gray-900 font-medium">
@@ -707,7 +1115,7 @@ const Categories = () => {
                                 className="h-full rounded-full transition-all duration-500 ease-out"
                                 style={{ 
                                   width: `${Math.min((category.spent / category.budget) * 100, 100)}%`,
-                                  backgroundColor: category.spent > category.budget ? '#ef4444' : category.color
+                                  backgroundColor: category.spent > category.budget ? '#ef4444' : categoryColor
                                 }}
                               />
                             </div>
@@ -732,34 +1140,30 @@ const Categories = () => {
                       {/* Type */}
                       <div>
                         <Badge 
-                          variant="outline" 
-                          className={category.type === 'expense' ? 'text-red-600 border-red-200' : 'text-green-600 border-green-200'}
+                          className={`border-0 font-semibold ${
+                            category.type === 'expense' 
+                              ? 'bg-gradient-to-r from-red-100 to-red-200 text-red-700 shadow-sm' 
+                              : 'bg-gradient-to-r from-green-100 to-green-200 text-green-700 shadow-sm'
+                          }`}
                         >
-                          {category.type === 'expense' ? 'Expense' : 'Income'}
+                          {category.type === 'expense' ? '💸 Expense' : '💰 Income'}
                         </Badge>
                       </div>
 
                       {/* Actions */}
                       <div className="flex items-center justify-end space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditCategory(category)}
-                          className="h-8 w-8 p-0"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setCategoryToDelete(category.id)}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setCategoryToDelete(category.id)}
                           className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                          title="Delete category (will be recreated if you add transactions)"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  </motion.div>
+                    </motion.div>
                 );
               })}
             </>
@@ -1100,31 +1504,32 @@ const Categories = () => {
                     <p className="text-gray-600 mb-4">Set spending limits for each expense category.</p>
                   </div>
 
-                                    <div className="space-y-4">
-                                          {expenseCategories.map((category) => {
+                                                        <div className="space-y-4">
+                          {expenseCategories.map((category, index) => {
                         const aiSuggestion = aiAnalysis?.categorySuggestions?.find(s => s.categoryId === category.id);
+                        const categoryColor = getCategoryColor(category.name, index);
                         return (
                                                     <motion.div 
                             key={category.id} 
                             initial={{ opacity: 0.8 }}
                             animate={{ 
                               opacity: 1,
-                              borderLeftColor: aiSuggestion ? '#8b5cf6' : category.color
+                              borderLeftColor: aiSuggestion ? '#8b5cf6' : categoryColor
                             }}
                             transition={{ duration: 0.3 }}
                             className={`p-4 rounded-lg border-l-4 ${
                               aiSuggestion ? 'border-l-purple-500' : 'border-l-gray-300'
                             }`}
                             style={{
-                              backgroundColor: category.color + '08',
-                              borderColor: category.color + '20'
+                              backgroundColor: categoryColor + '08',
+                              borderColor: categoryColor + '20'
                             }}
                           >
                                                         <div className="flex items-center justify-between mb-3">
                               <div className="flex items-center space-x-3">
                                 <div 
                                   className="w-10 h-6 rounded-md flex items-center justify-center text-sm font-bold"
-                                  style={{ backgroundColor: category.color + '20', color: category.color, border: `2px solid ${category.color}40` }}
+                                  style={{ backgroundColor: categoryColor + '20', color: categoryColor, border: `2px solid ${categoryColor}40` }}
                                 >
                                   {category.name.charAt(0).toUpperCase()}
                                 </div>
@@ -1250,19 +1655,22 @@ const Categories = () => {
                             const category = expenseCategories.find(cat => cat.id === categoryId);
                             if (!category || budget === 0) return null;
                             
+                            const categoryIndex = expenseCategories.findIndex(cat => cat.id === categoryId);
+                            const categoryColor = getCategoryColor(category.name, categoryIndex);
+                            
                             return (
                                                           <div 
                               key={categoryId} 
                               className="flex items-center justify-between gap-4 p-3 rounded-lg"
                               style={{
-                                backgroundColor: category.color + '10',
-                                border: `1px solid ${category.color}20`
+                                backgroundColor: categoryColor + '10',
+                                border: `1px solid ${categoryColor}20`
                               }}
                             >
                               <div className="flex items-center space-x-3 min-w-0 flex-1">
                                 <div 
                                   className="w-8 h-5 rounded-md flex-shrink-0 flex items-center justify-center text-xs font-bold"
-                                  style={{ backgroundColor: category.color + '30', color: category.color, border: `1px solid ${category.color}50` }}
+                                  style={{ backgroundColor: categoryColor + '30', color: categoryColor, border: `1px solid ${categoryColor}50` }}
                                 >
                                   {category.name.charAt(0).toUpperCase()}
                                 </div>

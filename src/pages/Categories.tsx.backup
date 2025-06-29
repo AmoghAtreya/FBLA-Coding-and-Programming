@@ -1,0 +1,1784 @@
+/**
+ * Categories Page
+ * 
+ * Professional category management interface with:
+ * - Category cards with clean design
+ * - Budget tracking and progress indicators
+ * - Visual spending breakdown
+ * - Category creation and management
+ * - Professional color scheme
+ */
+
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { motion } from 'framer-motion';
+import Layout from '@/components/Layout';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Trash2, Target, Search, Calculator, ChevronRight, ChevronLeft, X, CheckCircle } from 'lucide-react';
+import CategoryChart from '@/components/CategoryChart';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
+// Select component removed - no longer needed for manual category creation
+import { useCategoryStats } from "@/hooks/useCategoryStats";
+import { useTransactions } from "@/context/TransactionContext";
+import { generateBudgetSuggestions, generateSpendingInsights } from "@/services/aiService";
+
+// Category colors are auto-assigned when created from transactions
+
+const Categories = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const { fetchAllTransactions, transactions, setCategoryRefreshCallback } = useTransactions();
+  const { categories, loading: isLoading, error, refresh } = useCategoryStats();
+
+  const [currentCategoryId, setCurrentCategoryId] = useState<string | undefined>(undefined);
+  const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState<'all' | 'expense' | 'income'>('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  // State for expandable expense limits section
+  const [isExpenseLimitsOpen, setIsExpenseLimitsOpen] = useState(false);
+  
+  // Statistics filters state
+  const [statisticsFilters, setStatisticsFilters] = useState({
+    dateRange: 'This Month',
+    type: 'Expenses', // 'Expenses', 'Income', 'All'
+    selectedCategories: 'All categories' // 'All categories' or specific category name
+  });
+  
+  // Budgeting System State
+  const [isBudgetingOpen, setIsBudgetingOpen] = useState(false);
+  const [budgetingStep, setBudgetingStep] = useState(1);
+  const [budgetData, setBudgetData] = useState({
+    monthlyIncome: 0,
+    totalBudget: 0,
+    categoryBudgets: {} as Record<string, number>,
+  });
+  
+  // AI Analysis State
+  const [aiAnalysis, setAiAnalysis] = useState<any>(null);
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
+  const [spendingInsights, setSpendingInsights] = useState<string[]>([]);
+
+  // Function to auto-sync categories from existing transactions
+  const syncCategoriesFromTransactions = useCallback(async () => {
+    if (!user || !transactions.length) return;
+
+    try {
+      // Get all unique categories from transactions
+      const uniqueCategories: { [key: string]: { type: 'income' | 'expense' } } = {};
+      
+      transactions.forEach(transaction => {
+        if (transaction.category && transaction.type) {
+          const key = `${transaction.category}_${transaction.type}`;
+          uniqueCategories[key] = {
+            type: transaction.type as 'income' | 'expense'
+          };
+        }
+      });
+
+      // Check which categories already exist in database
+      const { data: existingCategories } = await supabase
+        .from('categories')
+        .select('name, type')
+        .eq('user_id', user.id);
+
+      const existingCategoryKeys = existingCategories?.map(cat => `${cat.name}_${cat.type}`) || [];
+
+      // Create categories that don't exist yet
+      const categoriesToCreate = Object.entries(uniqueCategories)
+        .filter(([key]) => !existingCategoryKeys.includes(key))
+        .map(([key, data]) => {
+          const categoryName = key.split('_').slice(0, -1).join('_');
+          return {
+            name: categoryName,
+            type: data.type,
+            color: data.type === 'income' ? '#22c55e' : '#f97316',
+            user_id: user.id,
+            budget: 0
+          };
+        });
+
+      if (categoriesToCreate.length > 0) {
+        const { error } = await supabase
+          .from('categories')
+          .insert(categoriesToCreate);
+
+        if (error) throw error;
+
+        toast({
+          title: "Categories Synced",
+          description: `Created ${categoriesToCreate.length} categories from your transactions`,
+        });
+
+        // Don't call refresh() here to prevent infinite loops
+        // The useCategoryStats hook will automatically detect the changes
+      }
+    } catch (error) {
+      console.error('Error syncing categories from transactions:', error);
+    }
+  }, [user, transactions, toast]); // Removed refresh from dependencies
+
+  useEffect(() => {
+    // Initial data loading
+    const initializeData = async () => {
+      await fetchAllTransactions();
+      // Small delay to ensure transactions are loaded before categories
+      setTimeout(() => {
+        refresh();
+      }, 100);
+    };
+    
+    initializeData();
+  }, []); // Run only on mount
+
+  // Register category refresh callback so transactions update categories
+  useEffect(() => {
+    if (refresh && typeof refresh === 'function') {
+      setCategoryRefreshCallback(refresh);
+    }
+    
+    // Cleanup callback when component unmounts
+    return () => {
+      setCategoryRefreshCallback(null);
+    };
+  }, []); // Empty dependencies - set once and forget
+
+  // Auto-sync categories from transactions when transactions change
+  useEffect(() => {
+    if (user && transactions && transactions.length > 0) {
+      // Add a small delay to prevent too frequent calls
+      const timeoutId = setTimeout(() => {
+        syncCategoriesFromTransactions();
+      }, 500);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [user, transactions.length, syncCategoriesFromTransactions]);
+
+  // Debounced AI analysis when monthly income changes
+  useEffect(() => {
+    if (budgetData.monthlyIncome > 0 && categories.length > 0 && transactions.length > 0) {
+      const timeoutId = setTimeout(() => {
+        generateAIAnalysis();
+      }, 2000); // Increased delay to prevent frequent calls
+
+      return () => clearTimeout(timeoutId);
+      } else {
+      // Clear analysis if income is 0 or data is not available
+      setAiAnalysis(null);
+      setSpendingInsights([]);
+    }
+  }, [budgetData.monthlyIncome]); // Simplified dependencies - only watch income changes
+
+  // Get unique categories by name and type
+  const getUniqueCategories = (cats: any[], type?: string) => {
+    let filtered = type ? cats.filter(cat => cat.type === type) : cats;
+    const uniqueMap = new Map();
+    filtered.forEach(cat => {
+      const key = `${cat.name.toLowerCase().trim()}_${cat.type}`;
+      if (!uniqueMap.has(key) || uniqueMap.get(key).spent < cat.spent) {
+        uniqueMap.set(key, cat);
+      }
+    });
+    return Array.from(uniqueMap.values());
+  };
+
+  const expenseCategories = getUniqueCategories(categories || [], 'expense');
+  const incomeCategories = getUniqueCategories(categories || [], 'income');
+  const uniqueCategories = getUniqueCategories(categories || []);
+
+  // Specific color assignments for common categories
+  const specificCategoryColors: Record<string, string> = {
+    'rent': '#C53030',           // Muted red
+    'housing': '#C53030',        // Muted red
+    'entertainment': '#DD6B20',   // Muted orange
+    'education': '#D69E2E',      // Muted golden yellow
+    'food': '#38A169',           // Muted lime green
+    'food & dining': '#38A169',  // Muted lime green
+    'groceries': '#38A169',      // Muted lime green
+    'shopping': '#0987A0',       // Muted cyan blue
+    'utilities': '#3182CE',      // Muted royal blue
+    'other': '#805AD5',          // Muted purple
+    'transportation': '#B83280', // Muted magenta
+    'gas': '#B83280',            // Muted magenta
+    'travel': '#B83280',         // Muted magenta
+    'healthcare': '#E53E3E',     // Muted red-pink
+    'insurance': '#2B6CB0',      // Muted blue
+    'phone': '#553C9A',          // Muted indigo
+    'internet': '#553C9A',       // Muted indigo
+    'subscription': '#9F7AEA',   // Muted light purple
+    'clothing': '#ED64A6',       // Muted pink
+    'personal care': '#F687B3',  // Muted light pink
+    'gym': '#48BB78',            // Muted green
+    'coffee': '#A0AEC0',         // Muted gray
+  };
+
+  // Fallback color palette for categories not in specific list
+  const fallbackColorPalette = [
+    '#4A5568', // Gray 600
+    '#2D3748', // Gray 700
+    '#1A202C', // Gray 800
+    '#718096', // Gray 500
+    '#A0AEC0', // Gray 400
+    '#4FD1C7', // Teal 300
+    '#68D391', // Green 300
+    '#9AE6B4', // Green 200
+    '#F6E05E', // Yellow 300
+    '#F6AD55', // Orange 300
+    '#FC8181', // Red 300
+    '#F687B3', // Pink 300
+    '#B794F6', // Purple 300
+    '#90CDF4', // Blue 300
+    '#81E6D9', // Teal 200
+  ];
+
+  // Function to get color for a category
+  const getCategoryColor = (categoryName: string, index: number) => {
+    const normalizedName = categoryName.toLowerCase().trim();
+    
+    // Check if we have a specific color for this category
+    if (specificCategoryColors[normalizedName]) {
+      return specificCategoryColors[normalizedName];
+    }
+    
+    // Use fallback palette with hash-based selection for consistency
+    let hash = 0;
+    for (let i = 0; i < categoryName.length; i++) {
+      hash = categoryName.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const colorIndex = Math.abs(hash) % fallbackColorPalette.length;
+    return fallbackColorPalette[colorIndex];
+  };
+
+  // Filter categories based on active filter and search term
+  const filteredCategories = useMemo(() => {
+    let cats = uniqueCategories;
+    
+    // Filter by type
+    if (activeFilter === 'expense') {
+      cats = expenseCategories;
+    } else if (activeFilter === 'income') {
+      cats = incomeCategories;
+    }
+    
+    // Filter by search term
+    if (searchTerm) {
+      cats = cats.filter(cat => 
+        cat.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    return cats;
+  }, [uniqueCategories, activeFilter, searchTerm, expenseCategories, incomeCategories]);
+
+
+
+  // Function to clean and resync all categories from transactions
+  const handleCleanAndResyncCategories = async () => {
+    if (!user) return;
+    
+    const confirmed = window.confirm(
+      "This will:\n" +
+      "1. Remove ALL existing categories\n" + 
+      "2. Scan all your transactions\n" +
+      "3. Create categories ONLY from actual transactions\n\n" +
+      "Are you sure you want to continue?"
+    );
+    
+    if (!confirmed) return;
+
+    try {
+      // Step 1: Remove all existing categories
+      const { error: deleteError } = await supabase
+        .from('categories')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (deleteError) throw deleteError;
+
+      // Step 2: Fetch all transactions to rebuild categories
+      await fetchAllTransactions();
+      
+            // Step 3: Wait a moment then sync categories from transactions
+      setTimeout(() => {
+        syncCategoriesFromTransactions();
+      }, 1000);
+
+        toast({
+        title: "Categories Cleaned & Resynced",
+        description: "All categories have been removed and will be recreated from your transactions",
+        });
+      
+      // Don't call refresh here as syncCategoriesFromTransactions will handle the updates
+    } catch (error) {
+      console.error('Error cleaning and resyncing categories:', error);
+      toast({
+        title: "Error",
+        description: "Failed to clean and resync categories",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Categories are now auto-created from transactions only
+
+  const handleDeleteCategory = async (id: string) => {
+    try {
+      const { error } = await supabase.from('categories').delete().eq('id', id);
+      if (error) throw error;
+      toast({
+        title: "Success",
+        description: "Category deleted successfully",
+      });
+      // The useCategoryStats hook will automatically detect the deletion and refresh
+      setCategoryToDelete(null);
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete category",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Budget editing is available through the budgeting modal only
+
+  // Filter categories for statistics based on current filters
+  const getFilteredCategoriesForStats = () => {
+    let filteredCats = categories;
+    
+    // Filter by type first
+    if (statisticsFilters.type === 'Expenses') {
+      filteredCats = expenseCategories;
+    } else if (statisticsFilters.type === 'Income') {
+      filteredCats = incomeCategories;
+    }
+    
+    // Filter categories with spending > 0 first
+    filteredCats = filteredCats.filter(cat => cat.spent > 0);
+    
+    // Then filter by specific category if selected
+    if (statisticsFilters.selectedCategories !== 'All categories') {
+      filteredCats = filteredCats.filter(cat => 
+        cat.name.trim().toLowerCase() === statisticsFilters.selectedCategories.trim().toLowerCase()
+      );
+    }
+    
+    // Remove duplicates by name - keep the one with higher spending
+    const uniqueCategories = new Map();
+    filteredCats.forEach(cat => {
+      const key = cat.name.toLowerCase().trim();
+      if (!uniqueCategories.has(key) || uniqueCategories.get(key).spent < cat.spent) {
+        uniqueCategories.set(key, cat);
+      }
+    });
+    
+    return Array.from(uniqueCategories.values());
+  };
+  
+  const filteredStatsCategories = getFilteredCategoriesForStats();
+  const filteredTotalSpent = filteredStatsCategories.reduce((sum, cat) => sum + cat.spent, 0);
+
+  // Calculate summary statistics
+  const totalBudget = expenseCategories.reduce((sum, cat) => sum + (cat.budget || 0), 0);
+  const totalSpent = expenseCategories.reduce((sum, cat) => sum + cat.spent, 0);
+  const totalIncome = incomeCategories.reduce((sum, cat) => sum + cat.spent, 0);
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(amount);
+  };
+
+  const getBudgetStatus = (category: any) => {
+    if (!category.budget || category.budget === 0) return 'no-budget';
+    const percentage = (category.spent / category.budget) * 100;
+    if (percentage >= 100) return 'over-budget';
+    if (percentage >= 80) return 'near-limit';
+    return 'on-track';
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'over-budget': return 'bg-gradient-to-r from-red-100 to-red-200 text-red-800 border-red-300 shadow-sm';
+      case 'near-limit': return 'bg-gradient-to-r from-amber-100 to-amber-200 text-amber-800 border-amber-300 shadow-sm';
+      case 'on-track': return 'bg-gradient-to-r from-green-100 to-green-200 text-green-800 border-green-300 shadow-sm';
+      default: return 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 border-gray-300 shadow-sm';
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'over-budget': return '🚨 Over Budget';
+      case 'near-limit': return '⚠️ Near Limit';
+      case 'on-track': return '✅ On Track';
+      default: return '📝 No Budget';
+    }
+  };
+
+  // AI Analysis Functions
+  const generateAIAnalysis = async () => {
+    if (budgetData.monthlyIncome === 0) return;
+    
+    setIsLoadingAI(true);
+    try {
+      const analysis = await generateBudgetSuggestions(
+        budgetData.monthlyIncome,
+        categories,
+        transactions
+      );
+      setAiAnalysis(analysis);
+      
+      // Pre-populate category budgets with AI suggestions
+      const aiCategoryBudgets: Record<string, number> = {};
+      analysis.categorySuggestions.forEach(suggestion => {
+        aiCategoryBudgets[suggestion.categoryId] = suggestion.suggestedBudget;
+      });
+      
+      setBudgetData(prev => ({
+        ...prev,
+        categoryBudgets: { ...prev.categoryBudgets, ...aiCategoryBudgets }
+      }));
+
+      // Show success notification for live updates
+      toast({
+        title: "✨ AI Analysis Complete",
+        description: `Updated budget suggestions for ${analysis.categorySuggestions.length} categories`,
+        duration: 3000,
+      });
+      
+      // Get spending insights
+      const insights = await generateSpendingInsights(transactions);
+      setSpendingInsights(insights);
+      
+    } catch (error) {
+      console.error('Error generating AI analysis:', error);
+      toast({
+        title: "AI Analysis Error",
+        description: "Unable to generate AI suggestions. Using fallback recommendations.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingAI(false);
+    }
+  };
+
+  // Budgeting Functions  
+  const handleBudgetingNext = () => {
+    if (budgetingStep < 4) {
+      setBudgetingStep(budgetingStep + 1);
+    }
+  };
+
+  const handleBudgetingPrev = () => {
+    if (budgetingStep > 1) {
+      setBudgetingStep(budgetingStep - 1);
+    }
+  };
+
+  const handleBudgetingClose = () => {
+    setIsBudgetingOpen(false);
+    setBudgetingStep(1);
+    setBudgetData({
+      monthlyIncome: 0,
+      totalBudget: 0,
+      categoryBudgets: {},
+    });
+    setAiAnalysis(null);
+    setSpendingInsights([]);
+    setIsLoadingAI(false);
+  };
+
+  const handleSaveBudgets = async () => {
+    try {
+      // Update category budgets in the database
+      const updates = Object.entries(budgetData.categoryBudgets).map(([categoryId, budget]) => 
+        supabase
+          .from('categories')
+          .update({ budget })
+          .eq('id', categoryId)
+      );
+      
+      await Promise.all(updates);
+      
+      toast({
+        title: "Success",
+        description: "Budget plan saved successfully!",
+      });
+      
+      await refresh();
+      handleBudgetingClose();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save budget plan",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updateCategoryBudget = (categoryId: string, budget: number) => {
+    setBudgetData(prev => ({
+      ...prev,
+      categoryBudgets: {
+        ...prev.categoryBudgets,
+        [categoryId]: budget
+      }
+    }));
+  };
+
+    // Show loading state only for initial load
+  if (isLoading && !categories.length) {
+    return (
+      <Layout>
+        <div className="flex justify-center items-center h-64">
+          <div className="flex flex-col items-center space-y-4">
+          <div className="h-12 w-12 rounded-full border-4 border-t-green-500 border-gray-300 animate-spin"></div>
+            <p className="text-gray-600">Loading categories...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Show error state
+  if (error) {
+  return (
+    <Layout>
+        <div className="flex justify-center items-center h-64">
+          <div className="text-center">
+            <div className="text-red-500 mb-4">
+              <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+          </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Categories</h3>
+            <p className="text-gray-600 mb-4">We couldn't load your categories. Please try again.</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  return (
+    <Layout>
+      <div className="space-y-6">
+        {/* Header with Stats and Chart */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+          {/* Left Side - Categories Info */}
+          <div className="bg-white rounded-lg p-8 shadow-sm border h-fit min-h-[600px] flex flex-col">
+            <div className="mb-10">
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900 mb-3">CATEGORIES</h1>
+                  <p className="text-gray-500">Manage your financial categories</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 bg-gradient-to-r from-green-50 to-green-100 px-4 py-2 rounded-full border border-green-200 shadow-sm">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span className="text-sm font-semibold text-green-700">🟢 ACTIVE</span>
+                  </div>
+                  <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full px-4 py-2 font-bold text-sm shadow-md">
+                    {uniqueCategories.length}
+                  </div>
+                </div>
+              </div>
+            </div>
+                
+            {/* Stats Grid */}
+            <div className="grid grid-cols-2 gap-6 mb-12 flex-1">
+              <div className="text-center py-6 px-4 bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl border border-blue-200/60 hover:shadow-md transition-all">
+                <div className="text-sm text-blue-700 mb-3 font-semibold">ALL</div>
+                <div className="text-3xl font-bold text-blue-700">{uniqueCategories.length}</div>
+              </div>
+              <div className="text-center py-6 px-4 bg-gradient-to-br from-red-50 to-red-100/50 rounded-xl border border-red-200/60 hover:shadow-md transition-all">
+                <div className="text-sm text-red-700 mb-3 font-semibold">EXPENSES</div>
+                <div className="text-3xl font-bold text-red-700">{expenseCategories.length}</div>
+              </div>
+              <div className="text-center py-6 px-4 bg-gradient-to-br from-green-50 to-green-100/50 rounded-xl border border-green-200/60 hover:shadow-md transition-all">
+                <div className="text-sm text-green-700 mb-3 font-semibold">INCOME</div>
+                <div className="text-3xl font-bold text-green-700">{incomeCategories.length}</div>
+              </div>
+              <div className="text-center py-6 px-4 bg-gradient-to-br from-orange-50 to-orange-100/50 rounded-xl border border-orange-200/60 hover:shadow-md transition-all">
+                <div className="text-sm text-orange-700 mb-3 font-semibold">OVER BUDGET</div>
+                <div className="text-3xl font-bold text-orange-700">
+                  {expenseCategories.filter(cat => getBudgetStatus(cat) === 'over-budget').length}
+                </div>
+              </div>
+            </div>
+
+                        {/* Start Budgeting Button */}
+            <div className="mt-auto space-y-3">
+              <Button 
+                onClick={() => setIsBudgetingOpen(true)}
+                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-4 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]"
+              >
+                <Calculator className="h-5 w-5 mr-2" />
+                💡 Start Budgeting
+                </Button>
+              
+              {/* Cleanup Button - only show if there are categories */}
+              {uniqueCategories.length > 0 && (
+                <Button 
+                  onClick={handleCleanAndResyncCategories}
+                  variant="outline"
+                  className="w-full text-red-600 border-red-300 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 py-2 text-sm font-medium transition-all duration-200 hover:border-red-400"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  🧹 Clean & Resync Categories
+                </Button>
+              )}
+            </div>
+        </div>
+
+          {/* Right Side - Statistics */}
+          <div className="bg-white rounded-lg p-8 shadow-sm border min-h-[600px] flex flex-col">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-3xl font-bold text-gray-900 truncate">Statistics</h2>
+              <button className="p-2 hover:bg-gray-100 rounded-full">
+                <X className="h-5 w-5 text-gray-400" />
+              </button>
+                </div>
+
+            {/* Filter Controls */}
+            <div className="flex gap-4 mb-6">
+              <div className="flex-1">
+                <select 
+                  value={statisticsFilters.dateRange}
+                  onChange={(e) => setStatisticsFilters(prev => ({ ...prev, dateRange: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white truncate"
+                >
+                  <option value="This Week">This Week</option>
+                  <option value="This Month">This Month</option>
+                  <option value="Last Month">Last Month</option>
+                  <option value="Last 3 Months">Last 3 Months</option>
+                  <option value="Last 6 Months">Last 6 Months</option>
+                  <option value="This Year">This Year</option>
+                  <option value="All Time">All Time</option>
+                </select>
+                </div>
+              <select 
+                value={statisticsFilters.type}
+                onChange={(e) => setStatisticsFilters(prev => ({ ...prev, type: e.target.value }))}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white truncate"
+              >
+                <option value="Expenses">Expenses</option>
+                <option value="Income">Income</option>
+                <option value="All">All</option>
+              </select>
+              <select 
+                value={statisticsFilters.selectedCategories}
+                onChange={(e) => setStatisticsFilters(prev => ({ ...prev, selectedCategories: e.target.value }))}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white min-w-[140px] truncate"
+              >
+                <option value="All categories">All categories</option>
+                {(statisticsFilters.type === 'Expenses' ? expenseCategories : 
+                  statisticsFilters.type === 'Income' ? incomeCategories : 
+                  categories)
+                  .filter(cat => cat.spent > 0)
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map(category => (
+                    <option key={category.id} value={category.name}>
+                      {category.name}
+                    </option>
+                  ))}
+              </select>
+              </div>
+
+            {/* Active Filters Indicator */}
+            {(statisticsFilters.type !== 'Expenses' || statisticsFilters.selectedCategories !== 'All categories' || statisticsFilters.dateRange !== 'This Month') && (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm text-blue-700">
+                    <span className="font-medium">Active Filters:</span>
+                    <span>{statisticsFilters.dateRange}</span>
+                    <span>•</span>
+                    <span>{statisticsFilters.type}</span>
+                    {statisticsFilters.selectedCategories !== 'All categories' && (
+                      <>
+                        <span>•</span>
+                        <span>{statisticsFilters.selectedCategories}</span>
+                      </>
+                    )}
+                </div>
+                  <button 
+                    onClick={() => setStatisticsFilters({
+                      dateRange: 'This Month',
+                      type: 'Expenses',
+                      selectedCategories: 'All categories'
+                    })}
+                    className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                  >
+                    Clear All
+                  </button>
+                </div>
+              </div>
+            )}
+
+                                    {/* Chart Section */}
+            <div className="flex-1 mb-6 min-h-[250px]">
+              <div className="flex flex-row items-start gap-6 h-full w-full">
+                {/* Legend - Left Side */}
+                <div className="flex-1 min-w-0 flex flex-col">
+                  {filteredStatsCategories.length === 0 ? (
+                    <div className="flex items-center justify-center h-48">
+                      <p className="text-sm text-gray-500">No categories to display</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {filteredStatsCategories
+                        .sort((a, b) => b.spent - a.spent)
+                        .map((category, index) => {
+                          const categoryColor = getCategoryColor(category.name, index);
+                          return (
+                            <div 
+                              key={`${category.name}-${category.id}`}
+                              className="flex items-center gap-3"
+                            >
+                              <div 
+                                className="w-4 h-4 rounded-sm flex-shrink-0"
+                                style={{ backgroundColor: categoryColor }}
+                              ></div>
+                              <span className="text-sm font-medium text-gray-700 flex-1">
+                                {category.name}
+                              </span>
+                              <span className="text-sm font-bold text-gray-900 flex-shrink-0">
+                                ${category.spent.toFixed(0)}
+                              </span>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  )}
+                </div>
+                
+                {/* Pie Chart - Right Side */}
+                <div className="flex-shrink-0 w-96">
+                  {filteredStatsCategories.length === 0 ? (
+                    <div className="h-96 w-96 flex items-center justify-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                      <div className="text-center">
+                        <div className="text-gray-400 mb-2 text-4xl">📊</div>
+                        <p className="text-lg text-gray-500 font-medium">No data available</p>
+                        <p className="text-base text-gray-400">Try adjusting your filters</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="relative h-96 w-96 flex items-center justify-center">
+                    <div className="relative">
+                      <svg className="transform -rotate-90 w-96 h-96" viewBox="0 0 280 280">
+                        <defs>
+                          <mask id="donut-mask">
+                            <rect width="280" height="280" fill="white" />
+                            <circle cx="140" cy="140" r="85" fill="black" />
+                          </mask>
+                        </defs>
+                      {(() => {
+                        const categoriesWithSpending = filteredStatsCategories;
+                        let cumulativeAngle = 0;
+                        
+                        return categoriesWithSpending.map((category, index) => {
+                          const percentage = filteredTotalSpent > 0 ? (category.spent / filteredTotalSpent) : 0;
+                          const angle = percentage * 360;
+                          const startAngle = cumulativeAngle;
+                          const endAngle = cumulativeAngle + angle;
+                          
+                          // Calculate path for pie slice
+                          const startAngleRad = (startAngle * Math.PI) / 180;
+                          const endAngleRad = (endAngle * Math.PI) / 180;
+                          
+                          const x1 = 140 + 110 * Math.cos(startAngleRad);
+                          const y1 = 140 + 110 * Math.sin(startAngleRad);
+                          const x2 = 140 + 110 * Math.cos(endAngleRad);
+                          const y2 = 140 + 110 * Math.sin(endAngleRad);
+                          
+                          const largeArcFlag = angle > 180 ? 1 : 0;
+                          
+                          const pathData = [
+                            `M 140 140`,
+                            `L ${x1} ${y1}`,
+                            `A 110 110 0 ${largeArcFlag} 1 ${x2} ${y2}`,
+                            'Z'
+                          ].join(' ');
+                          
+                          cumulativeAngle += angle;
+                          
+                          // Get unique color for this category
+                          const categoryColor = getCategoryColor(category.name, index);
+                          const percentageText = ((category.spent / filteredTotalSpent) * 100).toFixed(1);
+                          
+                          return (
+                            <g key={category.id}>
+                              <path
+                                d={pathData}
+                                fill={categoryColor}
+                                mask="url(#donut-mask)"
+                                className="hover:opacity-80 transition-opacity cursor-pointer"
+                              />
+                              <title>{`${category.name}: $${category.spent.toFixed(1)} (${percentageText}%)`}</title>
+                            </g>
+                          );
+                        });
+                      })()}
+                    </svg>
+                    
+                    {/* Center Text */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="text-center">
+                        <div className="text-lg text-gray-500 mb-2">
+                          Total
+                        </div>
+                        <div className="text-3xl font-bold text-gray-900">
+                          ${Math.round(filteredTotalSpent).toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                )}
+              </div>
+            </div>
+                          </div>
+                          
+            {/* Expandable Expense Limits Section */}
+            <div className="border rounded-lg">
+              <button
+                onClick={() => setIsExpenseLimitsOpen(!isExpenseLimitsOpen)}
+                className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-gray-700">
+                    Expense limit of {new Date().toLocaleDateString('en-US', { month: 'long' })}
+                  </span>
+                  <span className="text-lg font-bold text-gray-900">
+                    ${(totalBudget - totalSpent).toFixed(2)} left
+                  </span>
+                </div>
+                <motion.div
+                  animate={{ rotate: isExpenseLimitsOpen ? 180 : 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <ChevronRight className="h-4 w-4 text-gray-400" />
+                </motion.div>
+              </button>
+
+              {isExpenseLimitsOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="border-t bg-gray-50"
+                >
+                  <div className="p-4 space-y-4">
+                    {/* Overall Progress */}
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-medium">${totalSpent.toFixed(2)} / ${totalBudget.toFixed(2)}</span>
+                      <span className="text-gray-500">
+                        {totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0}% used
+                      </span>
+                        </div>
+                        
+                    {/* Category Progress Bars */}
+                    <div className="space-y-3">
+                      {expenseCategories
+                        .filter(cat => cat.budget > 0)
+                        .sort((a, b) => b.spent - a.spent)
+                        .map((category, index) => {
+                          const categoryColor = getCategoryColor(category.name, index);
+                          return (
+                            <div key={category.id} className="space-y-2">
+                              <div className="flex justify-between items-center">
+                                <div className="flex items-center gap-2">
+                                  <div 
+                                    className="w-3 h-3 rounded-full"
+                                    style={{ backgroundColor: categoryColor }}
+                                  ></div>
+                                  <span className="text-sm font-medium text-gray-700">
+                                    {category.name}
+                                  </span>
+                                </div>
+                              <span className="text-xs text-gray-500">
+                                  ${category.spent.toFixed(0)} / ${category.budget.toFixed(0)}
+                              </span>
+                            </div>
+                              <div className="flex gap-2">
+                                {/* Current spending bar */}
+                                <div className="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
+                                  <div
+                                    className="h-full rounded-full transition-all duration-500"
+                                    style={{
+                                      width: `${Math.min((category.spent / category.budget) * 100, 100)}%`,
+                                      backgroundColor: category.spent > category.budget ? '#ef4444' : categoryColor
+                                    }}
+                                  ></div>
+                          </div>
+                                                            {/* Previous period comparison */}
+                              <div className="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden opacity-60">
+                                <div
+                                  className="bg-orange-400 h-full rounded-full transition-all duration-500"
+                                  style={{
+                                    width: `${Math.min((category.spent * 0.8 / category.budget) * 100, 100)}%`
+                                  }}
+                                ></div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Legend */}
+                    <div className="flex justify-end gap-4 text-xs text-gray-500 pt-2 border-t">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-2 bg-gray-600 rounded-sm"></div>
+                        <span>Past 6 months (avg.)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-2 bg-orange-400 rounded-sm"></div>
+                        <span>Last month</span>
+                      </div>
+                    </div>
+                  </div>
+                      </motion.div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Filter Tabs and Search */}
+        <div className="flex justify-between items-center">
+          <div className="flex gap-1 bg-gradient-to-r from-gray-100 to-gray-50 p-1 rounded-xl shadow-sm border">
+            <button
+              onClick={() => setActiveFilter('all')}
+              className={`px-5 py-3 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                activeFilter === 'all'
+                  ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md transform scale-105'
+                  : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
+              }`}
+            >
+              ALL {uniqueCategories.length}
+            </button>
+            <button
+              onClick={() => setActiveFilter('expense')}
+              className={`px-5 py-3 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                activeFilter === 'expense'
+                  ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-md transform scale-105'
+                  : 'text-gray-600 hover:text-red-600 hover:bg-red-50'
+              }`}
+            >
+              EXPENSES {expenseCategories.length}
+            </button>
+            <button
+              onClick={() => setActiveFilter('income')}
+              className={`px-5 py-3 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                activeFilter === 'income'
+                  ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md transform scale-105'
+                  : 'text-gray-600 hover:text-green-600 hover:bg-green-50'
+              }`}
+            >
+              INCOME {incomeCategories.length}
+            </button>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search by Name or Type"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 w-64"
+              />
+            </div>
+            <div className="text-sm text-gray-500 italic">
+              📝 Categories are created automatically from your transactions
+            </div>
+          </div>
+        </div>
+
+        {/* Categories Grid */}
+        <div className="space-y-3">
+                    {filteredCategories.length === 0 ? (
+            <div className="text-center py-12 bg-gradient-to-br from-gray-50 to-white rounded-xl shadow-sm border border-gray-200">
+                    <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center mx-auto mb-6 shadow-md">
+                      <Target className="h-10 w-10 text-blue-600" />
+                    </div>
+              <p className="text-gray-600 mb-4 text-lg font-medium">
+                {searchTerm ? '🔍 No categories match your search' : '📂 No categories yet'}
+              </p>
+              {!searchTerm && (
+                <div className="space-y-3">
+                  <p className="text-sm text-gray-500">
+                    Categories are created automatically when you add transactions
+                  </p>
+                  <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-4 inline-block">
+                    <p className="text-sm text-blue-700 font-semibold">
+                      💡 Go to the Transactions page to add your first transaction
+                    </p>
+                  </div>
+                  </div>
+                )}
+                  </div>
+          ) : (
+            <>
+              {/* Table Header */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="grid grid-cols-6 gap-4 text-xs font-medium text-gray-500 uppercase tracking-wide">
+                  <div>CATEGORY</div>
+                  <div>ACTIVITY</div>
+                  <div>BUDGET</div>
+                  <div>STATUS</div>
+                  <div>TYPE</div>
+                  <div className="text-right">ACTIONS</div>
+                </div>
+              </div>
+
+              {/* Category Cards */}
+              {filteredCategories.map((category, index) => {
+                const status = getBudgetStatus(category);
+                const categoryColor = getCategoryColor(category.name, index);
+                return (
+                    <motion.div
+                      key={category.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
+                    className="p-4 rounded-lg shadow-sm border hover:shadow-md transition-all"
+                    style={{ 
+                      backgroundColor: categoryColor + '08',
+                      borderColor: categoryColor + '20'
+                    }}
+                  >
+                    <div className="grid grid-cols-6 gap-4 items-center">
+                      {/* Category Info */}
+                        <div className="flex items-center space-x-3">
+                          <div 
+                          className="w-14 h-10 rounded-xl flex items-center justify-center font-bold text-sm shadow-sm border-2 relative overflow-hidden"
+                          style={{ 
+                            backgroundColor: categoryColor, 
+                            color: 'white',
+                            borderColor: categoryColor
+                          }}
+                        >
+                          <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"></div>
+                          <span className="relative z-10">{category.name.charAt(0).toUpperCase()}</span>
+                        </div>
+                          <div>
+                          <h3 className="font-semibold text-gray-900">{category.name}</h3>
+                          <p className="text-sm" style={{ color: categoryColor }}>
+                            {category.type === 'expense' ? '💸 Expense Category' : '💰 Income Category'}
+                            </p>
+                          </div>
+                        </div>
+                        
+                      {/* Activity */}
+                      <div>
+                        <p className="text-sm text-gray-900 font-medium">
+                          {category.type === 'expense' ? 'Spent' : 'Received'} {formatCurrency(category.spent)}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {category.transactions || 0} transactions
+                        </p>
+                      </div>
+
+                      {/* Budget */}
+                      <div>
+                        <p className="text-sm text-gray-900 font-medium">
+                          {category.budget ? formatCurrency(category.budget) : 'No budget'}
+                        </p>
+                        {category.budget > 0 && (
+                          <div className="mt-2 space-y-1">
+                            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                              <div 
+                                className="h-full rounded-full transition-all duration-500 ease-out"
+                                style={{ 
+                                  width: `${Math.min((category.spent / category.budget) * 100, 100)}%`,
+                                  backgroundColor: category.spent > category.budget ? '#ef4444' : categoryColor
+                                }}
+                              />
+                            </div>
+                            <div className="flex justify-between text-xs text-gray-500">
+                              <span>Spent: {formatCurrency(category.spent)}</span>
+                              <span>{Math.round((category.spent / category.budget) * 100)}%</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Status */}
+                      <div>
+                        <Badge 
+                          className={`${getStatusColor(status)} border-0`}
+                        >
+                          <div className="w-2 h-2 rounded-full bg-current mr-1"></div>
+                          {getStatusText(status)}
+                        </Badge>
+                      </div>
+
+                      {/* Type */}
+                      <div>
+                        <Badge 
+                          className={`border-0 font-semibold ${
+                            category.type === 'expense' 
+                              ? 'bg-gradient-to-r from-red-100 to-red-200 text-red-700 shadow-sm' 
+                              : 'bg-gradient-to-r from-green-100 to-green-200 text-green-700 shadow-sm'
+                          }`}
+                        >
+                          {category.type === 'expense' ? '💸 Expense' : '💰 Income'}
+                        </Badge>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center justify-end space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setCategoryToDelete(category.id)}
+                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                          title="Delete category (will be recreated if you add transactions)"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                );
+              })}
+            </>
+          )}
+        </div>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={!!categoryToDelete} onOpenChange={() => setCategoryToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the category
+                and all associated data.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-red-600 hover:bg-red-700"
+                onClick={() => categoryToDelete && handleDeleteCategory(categoryToDelete)}
+              >
+                Delete Category
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Budgeting Center Modal */}
+        <div className={`fixed inset-0 z-[9999] flex items-center justify-center transition-all duration-300 ease-in-out ${
+          isBudgetingOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
+        }`}>
+          {/* Dark Overlay */}
+          <div className="absolute inset-0 bg-black bg-opacity-60 backdrop-blur-sm" onClick={handleBudgetingClose} />
+          
+          <div className={`relative bg-white rounded-xl shadow-2xl w-[680px] max-h-[90vh] transform transition-all duration-300 ease-in-out ${
+            isBudgetingOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'
+          }`}>
+            <div className="h-full flex flex-col max-h-[90vh]">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-xl">
+              <div>
+                <h2 className="text-xl font-bold">Budget Setup</h2>
+                <p className="text-blue-100 text-sm">Step {budgetingStep} of 4</p>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleBudgetingClose}
+                className="text-white hover:bg-blue-600"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+
+            {/* Progress Bar */}
+            <div className="px-8 py-6 bg-gray-50 border-b">
+              {/* Step Indicators */}
+              <div className="relative max-w-2xl mx-auto mb-6">
+                <div className="flex items-center justify-between">
+                  {/* Background Line - positioned between circles */}
+                  <div className="absolute top-8 left-8 right-8 h-0.5 bg-gray-300"></div>
+                  
+                  {/* Active Progress Line */}
+                  <div 
+                    className="absolute top-8 left-8 h-0.5 bg-blue-600 transition-all duration-500"
+                    style={{ 
+                      width: budgetingStep === 1 ? '0%' : 
+                             budgetingStep === 2 ? 'calc(33.33% - 16px)' :
+                             budgetingStep === 3 ? 'calc(66.66% - 16px)' :
+                             'calc(100% - 32px)'
+                    }}
+                  ></div>
+                  
+                  {[
+                    { step: 1, label: 'Welcome', icon: '👋' },
+                    { step: 2, label: 'Income', icon: '💰' },
+                    { step: 3, label: 'Categories', icon: '📊' },
+                    { step: 4, label: 'Review', icon: '✅' }
+                  ].map((item) => {
+                    // Check if current step is completed
+                    const isStep1Complete = true; // Welcome step is always complete
+                    const isStep2Complete = budgetData.monthlyIncome > 0;
+                    const isStep3Complete = Object.values(budgetData.categoryBudgets).some(budget => budget > 0);
+                    const isStep4Complete = true; // Review step is always accessible if reached
+                    
+                    // Determine if we can navigate to each step
+                    const canNavigateToStep = (stepNumber: number) => {
+                      if (stepNumber <= budgetingStep) return true; // Can always go back to completed steps
+                      if (stepNumber === budgetingStep + 1) {
+                        // Can only go to next step if current step is complete
+                        if (budgetingStep === 1 && isStep1Complete) return true;
+                        if (budgetingStep === 2 && isStep2Complete) return true;
+                        if (budgetingStep === 3 && isStep3Complete) return true;
+                        if (budgetingStep === 4 && isStep4Complete) return true;
+                      }
+                      return false;
+                    };
+                    
+                    const isClickable = canNavigateToStep(item.step);
+                    const isCompleted = budgetingStep > item.step;
+                    const isCurrent = budgetingStep === item.step;
+                    
+                    return (
+                      <div key={item.step} className="flex flex-col items-center relative z-10">
+                        {/* Step Circle */}
+                        <button
+                          onClick={() => {
+                            if (isClickable) {
+                              setBudgetingStep(item.step);
+                            }
+                          }}
+                          disabled={!isClickable}
+                          className={`w-16 h-16 rounded-full flex items-center justify-center text-xl font-medium transition-all duration-300 ${
+                            isCompleted
+                              ? 'bg-blue-600 text-white shadow-lg cursor-pointer hover:bg-blue-700' 
+                              : isCurrent
+                              ? 'bg-blue-600 text-white shadow-lg cursor-pointer hover:bg-blue-700'
+                              : isClickable
+                              ? 'bg-gray-300 text-gray-600 cursor-pointer hover:bg-gray-400'
+                              : 'bg-gray-300 text-gray-600 cursor-not-allowed opacity-60'
+                          } ${isClickable ? 'hover:scale-105' : ''}`}
+                        >
+                          {isCompleted ? '✓' : item.icon}
+                        </button>
+                        
+                        {/* Step Label */}
+                        <span className={`text-sm mt-3 font-medium transition-colors duration-300 ${
+                          budgetingStep >= item.step ? 'text-blue-600' : 'text-gray-500'
+                        }`}>
+                          {item.label}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              
+              {/* Progress Info */}
+              <div className="flex justify-between items-center max-w-2xl mx-auto">
+                <span className="text-sm text-gray-600 font-medium">
+                  Progress: {Math.round((budgetingStep / 4) * 100)}% Complete
+                </span>
+                <div className="flex items-center space-x-1">
+                  {[1, 2, 3, 4].map(step => (
+                    <div 
+                      key={step}
+                      className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                        budgetingStep >= step ? 'bg-blue-600' : 'bg-gray-300'
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {budgetingStep === 1 && (
+                <div className="space-y-6">
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Calculator className="h-8 w-8 text-blue-600" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Welcome to Budget Setup</h3>
+                    <p className="text-gray-600 mb-6">Let's create a personalized budget plan to help you manage your finances better.</p>
+                  </div>
+                  
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <h4 className="font-medium text-blue-900 mb-2">What we'll do:</h4>
+                    <ul className="text-sm text-blue-800 space-y-1">
+                      <li>• Set your monthly income target</li>
+                      <li>• Get AI-powered budget recommendations</li>
+                      <li>• Allocate budgets to your expense categories</li>
+                      <li>• Review and save your personalized budget plan</li>
+                      <li>• Track your progress with smart insights</li>
+                    </ul>
+                  </div>
+
+                  {spendingInsights.length > 0 && (
+                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200 p-4 rounded-lg">
+                      <h4 className="font-medium text-purple-900 mb-2 flex items-center">
+                        <span className="text-purple-600 mr-2">🤖</span>
+                        AI Spending Insights
+                      </h4>
+                      <ul className="text-sm text-purple-800 space-y-1">
+                        {spendingInsights.map((insight, index) => (
+                          <li key={index}>• {insight}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 p-4 rounded-lg">
+                      <div className="text-xl font-bold text-green-600 leading-tight">{categories.length}</div>
+                      <div className="text-xs text-green-700 mt-1">Categories</div>
+                    </div>
+                    <div className="bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200 p-4 rounded-lg">
+                      <div className="text-lg font-bold text-blue-600 leading-tight break-all">{formatCurrency(totalSpent)}</div>
+                      <div className="text-xs text-blue-700 mt-1">Last Month</div>
+                    </div>
+                    <div className="bg-gradient-to-br from-purple-50 to-violet-50 border border-purple-200 p-4 rounded-lg">
+                      <div className="text-xl font-bold text-purple-600 leading-tight">{expenseCategories.length}</div>
+                      <div className="text-xs text-purple-700 mt-1">Expenses</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {budgetingStep === 2 && (
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Set Your Monthly Income</h3>
+                    <p className="text-gray-600 mb-4">Enter your expected monthly income to help us recommend budget allocations.</p>
+                  </div>
+
+                                      <div className="space-y-4">
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="monthly-income">Monthly Income</Label>
+                          {budgetData.monthlyIncome > 0 && (
+                            <div className="flex items-center space-x-2">
+                              {isLoadingAI ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
+                                  <span className="text-xs text-blue-600 font-medium">AI Analyzing...</span>
+                                </>
+                              ) : aiAnalysis ? (
+                                <div className="flex items-center space-x-1">
+                                  <div className="rounded-full h-3 w-3 bg-green-500"></div>
+                                  <span className="text-xs text-green-600 font-medium">✨ AI Ready</span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center space-x-1">
+                                  <div className="animate-pulse rounded-full h-3 w-3 bg-yellow-400"></div>
+                                  <span className="text-xs text-yellow-600 font-medium">⏳ Preparing...</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <div className="relative mt-1">
+                          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                          <Input
+                            id="monthly-income"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            className="pl-8 text-lg"
+                            placeholder="5,000.00"
+                            value={budgetData.monthlyIncome || ''}
+                            onChange={(e) => setBudgetData(prev => ({
+                              ...prev,
+                              monthlyIncome: parseFloat(e.target.value) || 0
+                            }))}
+                          />
+                        </div>
+                      </div>
+
+                                        {budgetData.monthlyIncome > 0 && (
+                      <>
+                        <div className="bg-green-50 p-4 rounded-lg">
+                          <h4 className="font-medium text-green-900 mb-2">50/30/20 Rule Recommendation</h4>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between items-center gap-4">
+                              <span className="text-green-800">Fixed Expenses (50%)</span>
+                              <span className="font-medium text-green-900 text-right break-all">{formatCurrency(budgetData.monthlyIncome * 0.5)}</span>
+                            </div>
+                            <div className="flex justify-between items-center gap-4">
+                              <span className="text-green-800">Discretionary (30%)</span>
+                              <span className="font-medium text-green-900 text-right break-all">{formatCurrency(budgetData.monthlyIncome * 0.3)}</span>
+                            </div>
+                            <div className="flex justify-between items-center gap-4">
+                              <span className="text-green-800">Savings (20%)</span>
+                              <span className="font-medium text-green-900 text-right break-all">{formatCurrency(budgetData.monthlyIncome * 0.2)}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {budgetData.monthlyIncome > 0 && (
+                          <>
+                            {isLoadingAI ? (
+                              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 p-4 rounded-lg animate-pulse">
+                                <div className="flex items-center justify-center space-x-3">
+                                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                                  <span className="text-blue-800 font-medium">🤖 AI is analyzing your spending patterns...</span>
+                                </div>
+                                <p className="text-sm text-blue-600 text-center mt-2">
+                                  Creating personalized budget recommendations based on your financial data
+                                </p>
+                              </div>
+                            ) : budgetData.monthlyIncome > 0 && !aiAnalysis ? (
+                              <div className="bg-gradient-to-br from-yellow-50 to-amber-50 border border-yellow-200 p-4 rounded-lg">
+                                <div className="flex items-center justify-center space-x-3">
+                                  <div className="animate-pulse rounded-full h-6 w-6 bg-yellow-400 flex items-center justify-center">
+                                    <span className="text-yellow-800 text-sm">⏳</span>
+                                  </div>
+                                  <span className="text-yellow-800 font-medium">🤖 Preparing AI analysis...</span>
+                                </div>
+                                <p className="text-sm text-yellow-700 text-center mt-2">
+                                  AI will analyze your data in a moment
+                                </p>
+                              </div>
+                            ) : null}
+                          </>
+                        )}
+
+                        {aiAnalysis && (
+                          <motion.div 
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5 }}
+                            className="bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200 p-4 rounded-lg"
+                          >
+                            <h4 className="font-medium text-purple-900 mb-2 flex items-center">
+                              <span className="text-purple-600 mr-2">🤖</span>
+                              AI Financial Advisor
+                              <span className="ml-auto text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                                Live Updated
+                              </span>
+                            </h4>
+                            <p className="text-sm text-purple-800 italic">
+                              "{aiAnalysis.overallRecommendation}"
+                            </p>
+                          </motion.div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {budgetingStep === 3 && (
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Allocate Category Budgets</h3>
+                    <p className="text-gray-600 mb-4">Set spending limits for each expense category.</p>
+                  </div>
+
+                                                        <div className="space-y-4">
+                          {expenseCategories.map((category, index) => {
+                        const aiSuggestion = aiAnalysis?.categorySuggestions?.find(s => s.categoryId === category.id);
+                        const categoryColor = getCategoryColor(category.name, index);
+                        return (
+                                                    <motion.div 
+                            key={category.id} 
+                            initial={{ opacity: 0.8 }}
+                            animate={{ 
+                              opacity: 1,
+                              borderLeftColor: aiSuggestion ? '#8b5cf6' : categoryColor
+                            }}
+                            transition={{ duration: 0.3 }}
+                            className={`p-4 rounded-lg border-l-4 ${
+                              aiSuggestion ? 'border-l-purple-500' : 'border-l-gray-300'
+                            }`}
+                            style={{
+                              backgroundColor: categoryColor + '08',
+                              borderColor: categoryColor + '20'
+                            }}
+                          >
+                                                        <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center space-x-3">
+                                <div 
+                                  className="w-10 h-6 rounded-md flex items-center justify-center text-sm font-bold"
+                                  style={{ backgroundColor: categoryColor + '20', color: categoryColor, border: `2px solid ${categoryColor}40` }}
+                                >
+                                  {category.name.charAt(0).toUpperCase()}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <h4 className="font-medium text-gray-900 truncate">{category.name}</h4>
+                                  {aiSuggestion && (
+                                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                      aiSuggestion.priority === 'high' ? 'bg-red-100 text-red-700' :
+                                      aiSuggestion.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                                      'bg-green-100 text-green-700'
+                                    }`}>
+                                      {aiSuggestion.priority} priority
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-sm text-gray-500 break-all">
+                                  Last month: {formatCurrency(category.spent)}
+                                </p>
+                                {aiSuggestion && (
+                                  <p className="text-xs text-purple-600 mt-1 italic flex items-center">
+                                    💡 AI suggests: {formatCurrency(aiSuggestion.suggestedBudget)}
+                                    {budgetData.categoryBudgets[category.id] === aiSuggestion.suggestedBudget && (
+                                      <span className="ml-2 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                                        Applied
+                                      </span>
+                                    )}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                className="pl-8"
+                                placeholder="0.00"
+                                value={budgetData.categoryBudgets[category.id] || category.budget || ''}
+                                onChange={(e) => updateCategoryBudget(category.id, parseFloat(e.target.value) || 0)}
+                              />
+                            </div>
+                            
+                                                        {aiSuggestion && (
+                              <div className="bg-white bg-opacity-90 backdrop-blur-sm p-3 rounded border border-purple-200">
+                                <p className="text-xs text-purple-800">
+                                  <span className="font-medium">🤖 AI Reasoning:</span> {aiSuggestion.reasoning}
+                                </p>
+                                {aiSuggestion.suggestedBudget !== (budgetData.categoryBudgets[category.id] || 0) && (
+                                  <button
+                                    onClick={() => updateCategoryBudget(category.id, aiSuggestion.suggestedBudget)}
+                                    className="mt-2 text-xs bg-purple-100 hover:bg-purple-200 text-purple-700 px-3 py-1 rounded-full transition-colors"
+                                  >
+                                    Apply AI Suggestion
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                           </div>
+                         </motion.div>
+                       );
+                     })}
+
+                                         <div className="bg-blue-50 p-4 rounded-lg">
+                       <div className="flex justify-between items-center gap-4">
+                         <span className="font-medium text-blue-900">Total Allocated:</span>
+                         <span className="text-lg font-bold text-blue-900 text-right break-all">
+                           {formatCurrency(Object.values(budgetData.categoryBudgets).reduce((sum, budget) => sum + budget, 0))}
+                         </span>
+                       </div>
+                       {budgetData.monthlyIncome > 0 && (
+                         <div className="text-sm text-blue-800 mt-1 text-center">
+                           {Math.round((Object.values(budgetData.categoryBudgets).reduce((sum, budget) => sum + budget, 0) / budgetData.monthlyIncome) * 100)}% of income
+                         </div>
+                       )}
+                     </div>
+                  </div>
+                </div>
+              )}
+
+              {budgetingStep === 4 && (
+                <div className="space-y-6">
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <CheckCircle className="h-8 w-8 text-green-600" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Review Your Budget Plan</h3>
+                    <p className="text-gray-600 mb-6">Review your budget allocations before saving.</p>
+                  </div>
+
+                  <div className="space-y-4">
+                                         <div className="bg-blue-50 p-4 rounded-lg">
+                       <h4 className="font-medium text-blue-900 mb-3">Budget Summary</h4>
+                       <div className="space-y-2 text-sm">
+                         <div className="flex justify-between items-center">
+                           <span className="text-blue-800">Monthly Income:</span>
+                           <span className="font-medium text-blue-900 text-right break-all">{formatCurrency(budgetData.monthlyIncome)}</span>
+                         </div>
+                         <div className="flex justify-between items-center">
+                           <span className="text-blue-800">Total Budget:</span>
+                           <span className="font-medium text-blue-900 text-right break-all">
+                             {formatCurrency(Object.values(budgetData.categoryBudgets).reduce((sum, budget) => sum + budget, 0))}
+                           </span>
+                         </div>
+                         <div className="flex justify-between items-center border-t pt-2">
+                           <span className="text-blue-800">Remaining:</span>
+                           <span className="font-medium text-blue-900 text-right break-all">
+                             {formatCurrency(budgetData.monthlyIncome - Object.values(budgetData.categoryBudgets).reduce((sum, budget) => sum + budget, 0))}
+                           </span>
+                         </div>
+                       </div>
+                     </div>
+
+                                        <div className="space-y-4">
+                      <div>
+                        <h4 className="font-medium text-gray-900 mb-3">Category Budgets:</h4>
+                        <div className="space-y-2">
+                          {Object.entries(budgetData.categoryBudgets).map(([categoryId, budget]) => {
+                            const category = expenseCategories.find(cat => cat.id === categoryId);
+                            if (!category || budget === 0) return null;
+                            
+                            const categoryIndex = expenseCategories.findIndex(cat => cat.id === categoryId);
+                            const categoryColor = getCategoryColor(category.name, categoryIndex);
+                            
+                            return (
+                                                          <div 
+                              key={categoryId} 
+                              className="flex items-center justify-between gap-4 p-3 rounded-lg"
+                              style={{
+                                backgroundColor: categoryColor + '10',
+                                border: `1px solid ${categoryColor}20`
+                              }}
+                            >
+                              <div className="flex items-center space-x-3 min-w-0 flex-1">
+                                <div 
+                                  className="w-8 h-5 rounded-md flex-shrink-0 flex items-center justify-center text-xs font-bold"
+                                  style={{ backgroundColor: categoryColor + '30', color: categoryColor, border: `1px solid ${categoryColor}50` }}
+                                >
+                                  {category.name.charAt(0).toUpperCase()}
+                                </div>
+                                <span className="text-gray-900 truncate">{category.name}</span>
+                              </div>
+                              <span className="font-medium text-gray-900 text-right break-all flex-shrink-0">{formatCurrency(budget)}</span>
+                            </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {aiAnalysis && (
+                        <>
+                          {aiAnalysis.warningAreas && aiAnalysis.warningAreas.length > 0 && (
+                            <div className="bg-gradient-to-br from-red-50 to-orange-50 border border-red-200 p-4 rounded-lg">
+                              <h4 className="font-medium text-red-900 mb-2 flex items-center">
+                                <span className="text-red-600 mr-2">⚠️</span>
+                                Areas to Watch
+                              </h4>
+                              <ul className="text-sm text-red-800 space-y-1">
+                                {aiAnalysis.warningAreas.map((warning: string, index: number) => (
+                                  <li key={index}>• {warning}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {aiAnalysis.optimizationTips && aiAnalysis.optimizationTips.length > 0 && (
+                            <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 p-4 rounded-lg">
+                              <h4 className="font-medium text-green-900 mb-2 flex items-center">
+                                <span className="text-green-600 mr-2">💡</span>
+                                Optimization Tips
+                              </h4>
+                              <ul className="text-sm text-green-800 space-y-1">
+                                {aiAnalysis.optimizationTips.slice(0, 4).map((tip: string, index: number) => (
+                                  <li key={index}>• {tip}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {aiAnalysis.spendingInsights && aiAnalysis.spendingInsights.length > 0 && (
+                            <div className="bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200 p-4 rounded-lg">
+                              <h4 className="font-medium text-blue-900 mb-2 flex items-center">
+                                <span className="text-blue-600 mr-2">📊</span>
+                                Smart Insights
+                              </h4>
+                              <ul className="text-sm text-blue-800 space-y-1">
+                                {aiAnalysis.spendingInsights.map((insight: string, index: number) => (
+                                  <li key={index}>• {insight}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="border-t p-6 bg-gray-50">
+              <div className="flex justify-between items-center">
+                <Button
+                  variant="outline"
+                  onClick={budgetingStep === 1 ? handleBudgetingClose : handleBudgetingPrev}
+                  disabled={budgetingStep === 1}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-2" />
+                  {budgetingStep === 1 ? 'Cancel' : 'Previous'}
+                </Button>
+                
+                <div className="flex flex-col items-end">
+                  {/* Completion hint */}
+                  {budgetingStep === 2 && budgetData.monthlyIncome === 0 && (
+                    <span className="text-xs text-amber-600 mb-2 font-medium">
+                      💡 Please enter your monthly income to continue
+                    </span>
+                  )}
+                  {budgetingStep === 3 && !Object.values(budgetData.categoryBudgets).some(budget => budget > 0) && (
+                    <span className="text-xs text-amber-600 mb-2 font-medium">
+                      💡 Set at least one category budget to continue
+                    </span>
+                  )}
+                  
+                  <Button
+                    onClick={budgetingStep === 4 ? handleSaveBudgets : handleBudgetingNext}
+                    className="bg-blue-600 hover:bg-blue-700"
+                    disabled={
+                      (budgetingStep === 2 && budgetData.monthlyIncome === 0) ||
+                      (budgetingStep === 3 && !Object.values(budgetData.categoryBudgets).some(budget => budget > 0))
+                    }
+                  >
+                    {budgetingStep === 4 ? 'Save Budget Plan' : 'Next'}
+                    {budgetingStep !== 4 && <ChevronRight className="h-4 w-4 ml-2" />}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        </div>
+      </div>
+    </Layout>
+  );
+};
+
+export default Categories;

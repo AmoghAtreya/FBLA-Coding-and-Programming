@@ -13,7 +13,7 @@ import { Transaction } from '@/types';
 import { useAccounts } from '@/context/AccountContext'; 
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { useToast } from '@/components/ui';
+import { useToast } from '@/hooks/use-toast';
 import { useTransactions } from '@/context/TransactionContext';
 
 interface AddTransactionFormProps {
@@ -36,6 +36,16 @@ interface Category {
   type: 'income' | 'expense';
   color: string;
 }
+
+// Common categories that users might want to use
+const suggestedCategories = {
+  income: [
+    'Salary', 'Part-time Job', 'Freelance', 'Allowance', 'Scholarship', 'Grant', 'Investment', 'Gift', 'Side Hustle', 'Other Income'
+  ],
+  expense: [
+    'Food & Dining', 'Groceries', 'Transportation', 'Gas', 'Rent', 'Utilities', 'Entertainment', 'Shopping', 'Clothing', 'Healthcare', 'Education', 'Books', 'Subscription', 'Phone Bill', 'Internet', 'Insurance', 'Personal Care', 'Gym', 'Travel', 'Coffee', 'Other'
+  ]
+};
 
 const TransactionConfirmationModal: React.FC<{
   open: boolean;
@@ -98,7 +108,7 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({
     }
   }, [accounts, accountName]);
 
-  // Fetch categories from Supabase
+  // Fetch categories from Supabase and refresh on component mount
   useEffect(() => {
     const fetchCategories = async () => {
       if (!user) return;
@@ -148,7 +158,7 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({
     return filtered.reduce((sum, t) => sum + Math.abs(t.amount), 0) / filtered.length;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!description || !amount || !category || !accountName) {
       toast({
@@ -181,6 +191,32 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({
     // Otherwise, proceed as normal
     setIsLoading(true);
     try {
+      // Check if category exists, if not create it
+      const existingCategory = categories.find(cat => cat.name === category && cat.type === type);
+      if (!existingCategory) {
+        try {
+          const { data: newCategoryData } = await supabase
+            .from('categories')
+            .insert({
+              name: category,
+              type: type,
+              color: type === 'income' ? '#22c55e' : '#f97316',
+              user_id: user.id,
+            })
+            .select()
+            .single();
+
+          // Update the category ID for the transaction
+          if (newCategoryData) {
+            newTransaction.category_id = newCategoryData.id;
+          }
+        } catch (categoryError) {
+          console.error('Error creating category:', categoryError);
+        }
+      } else {
+        newTransaction.category_id = existingCategory.id;
+      }
+
       onTransactionAdd(newTransaction);
       setDescription('');
       setAmount('');
@@ -198,10 +234,36 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({
     }
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     setShowConfirmation(false);
     setIsLoading(true);
     try {
+      // Check if category exists, if not create it
+      const existingCategory = categories.find(cat => cat.name === pendingTransaction.category && cat.type === pendingTransaction.type);
+      if (!existingCategory) {
+        try {
+          const { data: newCategoryData } = await supabase
+            .from('categories')
+            .insert({
+              name: pendingTransaction.category,
+              type: pendingTransaction.type,
+              color: pendingTransaction.type === 'income' ? '#22c55e' : '#f97316',
+              user_id: user.id,
+            })
+            .select()
+            .single();
+
+          // Update the category ID for the transaction
+          if (newCategoryData) {
+            pendingTransaction.category_id = newCategoryData.id;
+          }
+        } catch (categoryError) {
+          console.error('Error creating category:', categoryError);
+        }
+      } else {
+        pendingTransaction.category_id = existingCategory.id;
+      }
+
       onTransactionAdd(pendingTransaction);
       setDescription('');
       setAmount('');
@@ -227,6 +289,13 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({
 
   // Filter categories by the selected transaction type
   const filteredCategories = categories.filter(cat => cat.type === type);
+  
+  // Combine existing categories with suggested categories, removing duplicates
+  const allCategoryOptions = React.useMemo(() => {
+    const existingNames = filteredCategories.map(cat => cat.name);
+    const suggested = suggestedCategories[type].filter(name => !existingNames.includes(name));
+    return { existing: filteredCategories, suggested };
+  }, [filteredCategories, type]);
 
   return (
     <>
@@ -282,26 +351,80 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({
           <Label htmlFor="category">Category</Label>
           <Select value={category} onValueChange={handleCategoryChange}>
             <SelectTrigger id="category" className="transition-all duration-300">
-              <SelectValue placeholder="Select category" />
+              <SelectValue placeholder={`Select ${type} category`} />
             </SelectTrigger>
-            <SelectContent>
-              {filteredCategories.length > 0 ? (
-                filteredCategories.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.name || "placeholder-value"}>
-                    <div className="flex items-center gap-2">
-                      <div 
-                        className="w-3 h-3 rounded-full" 
-                        style={{ backgroundColor: cat.color }}
-                      />
-                      {cat.name || "Unnamed Category"}
-                    </div>
-                  </SelectItem>
-                ))
-              ) : (
-                <SelectItem value="no-categories">No categories available</SelectItem>
+            <SelectContent className="max-h-60">
+              {/* Show existing categories from database first */}
+              {allCategoryOptions.existing.length > 0 && (
+                <>
+                  <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide bg-gray-50 border-b">
+                    💼 Your Categories
+                  </div>
+                  {allCategoryOptions.existing.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.name} className="py-2">
+                      <div className="flex items-center gap-3">
+                        <div 
+                          className="w-4 h-4 rounded-full flex-shrink-0 ring-1 ring-gray-200" 
+                          style={{ backgroundColor: cat.color }}
+                        />
+                        <span className="font-medium">{cat.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                  {allCategoryOptions.suggested.length > 0 && (
+                    <div className="border-t my-1" />
+                  )}
+                </>
+              )}
+              
+              {/* Show suggested categories */}
+              {allCategoryOptions.suggested.length > 0 && (
+                <>
+                  <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide bg-blue-50 border-b">
+                    ✨ Suggested Categories
+                  </div>
+                  {allCategoryOptions.suggested.map((categoryName) => (
+                    <SelectItem key={categoryName} value={categoryName} className="py-2">
+                      <div className="flex items-center gap-3">
+                        <div 
+                          className="w-4 h-4 rounded-full flex-shrink-0 ring-1 ring-gray-200" 
+                          style={{ backgroundColor: type === 'income' ? '#22c55e' : '#f97316' }}
+                        />
+                        <span>{categoryName}</span>
+                        <span className="ml-auto text-xs text-gray-400">New</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </>
+              )}
+              
+              {/* Fallback if no categories */}
+              {allCategoryOptions.existing.length === 0 && allCategoryOptions.suggested.length === 0 && (
+                <SelectItem value="Other" className="py-2">
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="w-4 h-4 rounded-full flex-shrink-0 ring-1 ring-gray-200" 
+                      style={{ backgroundColor: type === 'income' ? '#22c55e' : '#f97316' }}
+                    />
+                    <span>{type === 'income' ? 'Other Income' : 'Other'}</span>
+                  </div>
+                </SelectItem>
               )}
             </SelectContent>
           </Select>
+          
+          {/* Helper text */}
+          <div className="flex items-center justify-between text-xs text-gray-500">
+            <span>
+              {allCategoryOptions.existing.length > 0 
+                ? `${allCategoryOptions.existing.length} existing • ${allCategoryOptions.suggested.length} suggested`
+                : 'Categories are created automatically'
+              }
+            </span>
+            {category && !allCategoryOptions.existing.find(cat => cat.name === category) && (
+              <span className="text-green-600 font-medium">✓ Will be created</span>
+            )}
+          </div>
         </div>
         
         <div className="space-y-2">
@@ -324,17 +447,16 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({
           </Select>
         </div>
         
-        <div className="pt-4">
-          <Button
-            type="submit"
-            className="w-full bg-finflow-blue hover:bg-blue-700 transform hover:scale-[1.02] transition-all duration-300"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Adding...' : `Add ${type === 'income' ? 'Income' : 'Expense'}`}
-          </Button>
-        </div>
+        <Button 
+          type="submit" 
+          className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium py-3 rounded-lg transition-all duration-300 transform hover:scale-105"
+          disabled={isLoading}
+        >
+          {isLoading ? 'Adding Transaction...' : `Add ${type === 'income' ? 'Income' : 'Expense'}`}
+        </Button>
       </form>
-      <TransactionConfirmationModal
+
+      <TransactionConfirmationModal 
         open={showConfirmation}
         onConfirm={handleConfirm}
         onCancel={handleCancel}

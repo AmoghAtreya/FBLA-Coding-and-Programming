@@ -68,12 +68,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const totalExpenses = transactions.reduce((total, transaction) => total + transaction.amount, 0).toLocaleString();
 
 
-  // Calculate actual transaction count for notification
-  const recentTransactionsCount = transactions.filter(t => {
-    const transactionDate = new Date(t.created_at || t.date);
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    return transactionDate > oneDayAgo;
-  }).length;
+  // Calculate total transaction count for notification
+  const totalTransactionsCount = transactions.length;
 
   const navigationItems = [
     { 
@@ -83,17 +79,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       active: location.pathname === '/'
     },
     { 
-      name: 'Analytics', 
-      path: '/analytics', 
-      icon: BarChart3,
-      active: location.pathname === '/analytics'
-    },
-    { 
       name: 'Transaction', 
       path: '/transactions', 
       icon: Send,
       active: location.pathname === '/transactions',
-      badge: recentTransactionsCount > 0 ? recentTransactionsCount.toString() : undefined
+      badge: totalTransactionsCount > 0 ? totalTransactionsCount.toString() : undefined
     },
     { 
       name: 'Card', 
@@ -103,7 +93,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       submenu: ['Personal card', 'Business card']
     },
     { 
-      name: 'Payment', 
+      name: 'Categories', 
       path: '/categories', 
       icon: Wallet,
       active: location.pathname === '/categories'
@@ -785,10 +775,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         </Button>
                       </div>
                       <div className="space-y-2">
-                        {recentTransactionsCount > 0 && (
+                        {totalTransactionsCount > 0 && (
                           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                             <p className="text-xs font-medium text-blue-800">
-                              {recentTransactionsCount} new transaction{recentTransactionsCount > 1 ? 's' : ''}
+                              {totalTransactionsCount} total transaction{totalTransactionsCount > 1 ? 's' : ''}
                             </p>
                             <p className="text-xs text-blue-600">View in transactions</p>
                           </div>

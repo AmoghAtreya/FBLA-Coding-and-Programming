@@ -126,7 +126,7 @@ const Transactions = () => {
     });
   }, [transactions, searchQuery, filters]);
 
-  const handleAddTransaction = (newTransaction: {
+  const handleAddTransaction = async (newTransaction: {
     transaction_date: string;
     type: 'income' | 'expense';
     amount: number;
@@ -134,16 +134,20 @@ const Transactions = () => {
     description: string;
     account_name: string;
   }) => {
-    addNewTransaction({
-      transaction_date: newTransaction.transaction_date,
-      type: newTransaction.type,
-      amount: newTransaction.amount,
-      category: newTransaction.category,
-      description: newTransaction.description,
-      account_name: newTransaction.account_name,
-      status: 'Success',
-    });
-    setActiveSheet(null);
+    try {
+      await addNewTransaction({
+        transaction_date: newTransaction.transaction_date,
+        type: newTransaction.type,
+        amount: newTransaction.amount,
+        category: newTransaction.category,
+        description: newTransaction.description,
+        account_name: newTransaction.account_name,
+      });
+      setActiveSheet(null);
+    } catch (error) {
+      console.error('Error in handleAddTransaction:', error);
+      // Error is already handled in the transaction context
+    }
   };
 
   const toggleFilter = (type: 'type' | 'category', value: string) => {
@@ -555,7 +559,7 @@ const Transactions = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500 mb-1">Total Transactions</p>
-                <p className="text-2xl font-bold text-gray-900">{transactionMetrics.totalTransactions}</p>
+                <p className="text-2xl font-bold text-gray-900 center-left">{transactionMetrics.totalTransactions}</p>
               </div>
               <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
                 <DollarSign className="w-6 h-6 text-blue-600" />
