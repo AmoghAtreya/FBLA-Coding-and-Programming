@@ -359,20 +359,20 @@ const LandingNew = () => {
               transition={{ duration: 1, delay: 0.3 }}
             >
               <div className="relative w-full h-full flex justify-end" style={{ transform: 'translateX(30%)' }}>
-                                  <motion.img 
-                    src="/iphone.png" 
-                    alt="iPhone App Preview"
-                    className="w-full h-auto object-contain relative z-10"
-                    animate={{ y: [-5, 5, -5] }}
-                    transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-                    style={{ 
-                      filter: 'drop-shadow(0 25px 50px rgba(0, 0, 0, 0.3))',
-                      height: 'calc(100vh + 50px)',
-                      objectFit: 'cover',
-                      objectPosition: 'center top',
-                      transform: 'scale(1.6)',
-                      minWidth: '800px'
-                    }}
+                <motion.img 
+                  src="/iphone.png" 
+                  alt="iPhone App Preview"
+                  className="w-full h-auto object-contain relative z-10"
+                  animate={{ y: [-5, 5, -5] }}
+                  transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+                  style={{ 
+                    filter: 'drop-shadow(0 25px 50px rgba(0, 0, 0, 0.3))',
+                    height: 'calc(100vh + 50px)', // Reduced height
+                    objectFit: 'cover',
+                    objectPosition: 'center top',
+                    transform: 'scale(1.4)', // Reduced scale
+                    minWidth: '700px' // Reduced width
+                  }}
                 />
                 
                 {/* Glow effect */}
