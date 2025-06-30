@@ -193,6 +193,59 @@ const TransactionReport = () => {
     })).sort((a, b) => b.value - a.value);
   }, [filteredTransactions]);
 
+  const exportCSV = () => {
+    const currentDate = format(new Date(), 'yyyy-MM-dd');
+    const dateRangeStr = `${format(dateRange.start, 'yyyy-MM-dd')}_to_${format(dateRange.end, 'yyyy-MM-dd')}`;
+    
+    // Create CSV content with comprehensive data
+    const csvContent = [
+      // Header row
+      'Date,Description,Category,Type,Amount,Account',
+      // Data rows
+      ...filteredTransactions.map(tx => {
+        const date = format(new Date(tx.transaction_date || tx.date || ''), 'yyyy-MM-dd');
+        const description = (tx.description || 'No description').replace(/"/g, '""');
+        const category = (tx.category || 'Uncategorized').replace(/"/g, '""');
+        const type = tx.type === 'income' ? 'Income' : 'Expense';
+        const amount = tx.type === 'income' 
+          ? tx.amount 
+          : -Math.abs(tx.amount);
+        const account = 'Unknown'; // Account info not available in transaction data
+        
+        return `${date},"${description}","${category}","${type}",${amount},"${account}"`;
+      }),
+      // Summary rows
+      '',
+      'Summary',
+      `Total Income,${formatCurrency(financialSummary.totalIncome)}`,
+      `Total Expenses,${formatCurrency(financialSummary.totalExpenses)}`,
+      `Net Balance,${formatCurrency(financialSummary.balance)}`,
+      '',
+      'Account Balances',
+      ...accounts.map(account => 
+        `${account.name} (${account.type}),${formatCurrency(account.balance || 0)}`
+      ),
+      `Total Balance,${formatCurrency(accounts.reduce((sum, account) => sum + (account.balance || 0), 0))}`
+    ].join('\n');
+    
+    // Create and download the file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `financial-report_${dateRangeStr}_${currentDate}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "CSV Export Complete",
+      description: "Your financial report has been downloaded as a CSV file",
+      duration: 3000,
+    });
+  };
+
   const generatePDF = async () => {
     setIsGenerating(true);
 
@@ -509,6 +562,7 @@ const TransactionReport = () => {
       <body>
         <div class="print-controls">
           <button class="print-button" onclick="window.print()">Print Report</button>
+          <button class="print-button" onclick="exportCSVFromPreview()" style="margin-left: 10px; background-color: #10b981;">Export CSV</button>
         </div>
         
         <h1>Financial Report</h1>
@@ -675,6 +729,58 @@ const TransactionReport = () => {
           const categoryData = ${JSON.stringify(categoryChartData)};
           const accountData = ${JSON.stringify(accountChartData)};
           const financialSummary = ${JSON.stringify(financialSummary)};
+          const filteredTransactions = ${JSON.stringify(filteredTransactions)};
+          const accounts = ${JSON.stringify(accounts)};
+          const dateRange = ${JSON.stringify(dateRange)};
+
+          // CSV Export function for preview window
+          function exportCSVFromPreview() {
+            const currentDate = new Date().toISOString().split('T')[0];
+            const startDate = new Date(dateRange.start).toISOString().split('T')[0];
+            const endDate = new Date(dateRange.end).toISOString().split('T')[0];
+            const dateRangeStr = startDate + '_to_' + endDate;
+            
+            // Create CSV content
+            const csvRows = [
+              'Date,Description,Category,Type,Amount,Account',
+              ...filteredTransactions.map(tx => {
+                const date = new Date(tx.transaction_date || tx.date || '').toISOString().split('T')[0];
+                const description = (tx.description || 'No description').replace(/"/g, '""');
+                const category = (tx.category || 'Uncategorized').replace(/"/g, '""');
+                const type = tx.type === 'income' ? 'Income' : 'Expense';
+                const amount = tx.type === 'income' ? tx.amount : -Math.abs(tx.amount);
+                const account = 'Unknown'; // Account info not available in transaction data
+                
+                return date + ',"' + description + '","' + category + '","' + type + '",' + amount + ',"' + account + '"';
+              }),
+              '',
+              'Summary',
+              'Total Income,$' + financialSummary.totalIncome.toFixed(2),
+              'Total Expenses,$' + financialSummary.totalExpenses.toFixed(2),
+              'Net Balance,$' + financialSummary.balance.toFixed(2),
+              '',
+              'Account Balances',
+              ...accounts.map(account => 
+                account.name + ' (' + account.type + '),$' + (account.balance || 0).toFixed(2)
+              ),
+              'Total Balance,$' + accounts.reduce((sum, account) => sum + (account.balance || 0), 0).toFixed(2)
+            ];
+            
+            const csvContent = csvRows.join('\\n');
+            
+            // Create and download the file
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'financial-report_' + dateRangeStr + '_' + currentDate + '.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            // CSV file downloaded silently without popup
+          }
 
           // Transaction Trends Chart
           const transactionCtx = document.getElementById('transactionChart').getContext('2d');
@@ -876,6 +982,27 @@ const TransactionReport = () => {
             Preview Report
           </Button>
           
+          {/* <Button 
+            onClick={generatePDF}
+            className="flex items-center gap-2"
+            disabled={isGenerating}
+          >
+            {isGenerating ? (
+              <Loader2 size={18} className="animate-spin" />
+            ) : (
+              <Download size={18} />
+            )}
+            {isGenerating ? 'Generating...' : 'Download PDF'}
+          </Button> */}
+
+          <Button 
+            onClick={exportCSV}
+            className="flex items-center gap-2"
+            variant="outline"
+          >
+            <Download size={18} />
+            Export CSV
+          </Button>
         </div>
       </div>
       
